@@ -91,6 +91,13 @@ TooltipEngine.classes.colorPicker = TooltipBase.extend({
             b: Math.min(colors[2] || 0, 255)
         };
 
+        this.isGrayscale = colors.length === 1;
+
+        if (this.isGrayscale) {
+            rgb.g = colors[0];
+            rgb.b = colors[0];
+        }
+
         this.aceLocation = {
             start: paramsStart,
             length: paramsEnd - paramsStart,
@@ -98,7 +105,7 @@ TooltipEngine.classes.colorPicker = TooltipBase.extend({
         };
         this.aceLocation.tooltipCursor = this.aceLocation.start + this.aceLocation.length + this.closing.length;
 
-        if (event.source && event.source.action === "insertText" && event.source.text.length === 1 
+        if (event.source && event.source.action === "insertText" && event.source.text.length === 1
                 && this.parent.options.type === "ace_pjs") {
             // Auto-close
             if (body.length === 0 && this.closing.length === 0) {
@@ -119,7 +126,6 @@ TooltipEngine.classes.colorPicker = TooltipBase.extend({
                 this.updateText(rgb);
             }
         }
-        
 
         this.updateTooltip(rgb);
         this.placeOnScreen();
@@ -128,11 +134,15 @@ TooltipEngine.classes.colorPicker = TooltipBase.extend({
     },
 
     updateTooltip: function(rgb) {
-        this.$el.find(".picker").ColorPickerSetColor(rgb);
+        this.$el.find(".picker").ColorPickerSetColor(rgb).ColorPickerSetGrayscale(this.isGrayscale);
     },
 
     updateText: function(rgb) {
-        TooltipBase.prototype.updateText.call(this, rgb.r + ", " + rgb.g + ", " + rgb.b);
+        if (this.isGrayscale) {
+            TooltipBase.prototype.updateText.call(this, rgb.r);
+        } else {
+            TooltipBase.prototype.updateText.call(this, rgb.r + ", " + rgb.g + ", " + rgb.b);
+        }
         this.aceLocation.tooltipCursor = this.aceLocation.start + this.aceLocation.length + this.closing.length;
     }
 });
