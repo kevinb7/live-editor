@@ -1001,6 +1001,8 @@ window.LiveEditor = Backbone.View.extend({
                 action: "reset"
             });
             $el.find("#step-over").removeAttr("disabled");
+            $el.find("#step-in").removeAttr("disabled");
+            $el.find("#step-out").removeAttr("disabled");
         });
 
         $el.on("click", "#debug-run", function () {
@@ -1669,6 +1671,8 @@ window.LiveEditor = Backbone.View.extend({
     listenStepperMessages: function(data) {
         if (data.action === "halted") {
             this.$el.find("#step-over").attr("disabled", "");
+            this.$el.find("#step-in").attr("disabled", "");
+            this.$el.find("#step-out").attr("disabled", "");
         } else if (data.action === "step") {
             console.log("step: %o", data.value);
             var lineno = data.value.lineno;

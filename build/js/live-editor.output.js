@@ -649,6 +649,38 @@ window.LiveEditorOutput = Backbone.View.extend({
             }
         }
 
+        if (data.action === "stepIn") {
+            result = stepper.stepIn();
+            if (stepper.halted()) {
+                this.postParent({
+                    type: "stepper",
+                    action: "halted"
+                });
+            } else {
+                this.postParent({
+                    type: "stepper",
+                    action: "step",
+                    value: result.value
+                });
+            }
+        }
+
+        if (data.action === "stepOut") {
+            result = stepper.stepOut();
+            if (stepper.halted()) {
+                this.postParent({
+                    type: "stepper",
+                    action: "halted"
+                });
+            } else {
+                this.postParent({
+                    type: "stepper",
+                    action: "step",
+                    value: result.value
+                });
+            }
+        }
+
         if (data.action === "setBreakpoint") {
             stepper.setBreakpoint(data.lineno);
             console.log("set breakpoint at: " + data.lineno);
