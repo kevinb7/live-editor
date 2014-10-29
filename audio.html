@@ -1,7 +1,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Live Editor Simple Demo</title>
+    <title>Live Editor Audio Demo</title>
     <link rel="stylesheet" href="build/css/live-editor.core_deps.css"/>
     <link rel="stylesheet" href="build/css/live-editor.audio.css"/>
     <link rel="stylesheet" href="build/css/live-editor.tooltips.css"/>
@@ -18,14 +18,10 @@
         #sample-live-editor {
             padding: 0;
         }
-
-        .ace_breakpoint {
-            background: lightgreen;
-        }
     </style>
 </head>
 <body>
-    <h1>Live Editor Example</h1>
+    <h1>Live Editor Audio Demo</h1>
     <div id="sample-live-editor"></div>
 
     <script src="build/js/live-editor.core_deps.js"></script>
@@ -35,30 +31,25 @@
     <script src="build/js/live-editor.tooltips.js"></script>
     <script src="build/js/live-editor.ui.js"></script>
     <script src="build/js/live-editor.editor_ace.js"></script>
-    <script src="build/js/live-editor.debugger.js"></script>
 
     <script>
-    window.liveEditor = new LiveEditor({
-        el: $("#sample-live-editor"),
-        code: window.localStorage["test-code"] || "rect(10, 10, 100, 100);",
-        width: 400,
-        height: 400,
-        editorHeight: "80%",
-        autoFocus: true,
-        workersDir: "build/workers/",
-        externalsDir: "build/external/",
-        imagesDir: "build/images/",
-        execFile: "output.html",
-        jshintFile: "build/external/jshint/jshint.js"
+    $.getJSON("test-audio.json", function(data) {
+        window.liveEditor = new LiveEditor({
+            el: $("#sample-live-editor"),
+            code: data.init.code,
+            version: data.init.configVersion,
+            recordingMP3: data.mp3,
+            recordingCommands: data.commands,
+            recordingInit: data.init,
+            width: 400,
+            height: 400,
+            workersDir: "../../build/workers/",
+            externalsDir: "../../build/external/",
+            imagesDir: "../../build/images/",
+            execFile: "output.html",
+            jshintFile: "../../build/external/jshint/jshint.js"
+        });
     });
-    liveEditor.editor.on("change", function() {
-        window.localStorage["test-code"] = liveEditor.editor.text();
-    });
-    ScratchpadDebugger.init({
-        liveEditor: liveEditor,
-        editor: liveEditor.editor.editor
-    });
-    ScratchpadAutosuggest.init(liveEditor.editor.editor);
     </script>
 </body>
 </html>
