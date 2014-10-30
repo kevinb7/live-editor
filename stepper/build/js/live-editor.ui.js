@@ -111,7 +111,7 @@ function program13(depth0,data) {
   else { helper = (depth0 && depth0._); stack1 = typeof helper === functionType ? helper.call(depth0, options) : helper; }
   if (!helpers._) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(13, program13, data),data:data}); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\n                </div>\n            </div>\n            <div class=\"scratchpad-debugger\">\n                <button id=\"debug-reset\">Reset</button>\n                <button id=\"debug-run\">Run</button>\n                <button id=\"debug-pause\" disabled>Pause</button>\n                <span style=\"width:50px;display:inline-block;\"></span>\n                <button id=\"step-over\" disabled>Step Over</button>\n                <button id=\"step-in\" disabled>Step In</button>\n                <button id=\"step-out\" disabled>Step Out</button>\n            </div>\n        </div>\n\n        <div class=\"scratchpad-toolbar scratchpad-dev-record-row\" style=\"display:none;\"></div>\n    </div>\n</div>";
+  buffer += "\n                </div>\n            </div>\n            <div class=\"scratchpad-debugger\">\n                Debug Mode <input type=\"checkbox\" id=\"debug-mode\">\n                <div class=\"debugger-controls\" style=\"display:none;margin-top:5px;\">\n                    <button id=\"debug-reset\">Restart and Pause</button>\n                    <button id=\"debug-run\">Run</button>\n                    <span style=\"width:50px;display:inline-block;\"></span>\n                    <button id=\"step-over\" disabled>Step Over</button>\n                    <button id=\"step-in\" disabled>Step In</button>\n                    <button id=\"step-out\" disabled>Step Out</button>\n                </div>\n            </div>\n        </div>\n\n        <div class=\"scratchpad-toolbar scratchpad-dev-record-row\" style=\"display:none;\"></div>\n    </div>\n</div>";
   return buffer;
   });;
 window.ScratchpadDrawCanvas = Backbone.View.extend({
@@ -995,6 +995,20 @@ window.LiveEditor = Backbone.View.extend({
         // - move this out into its own view
         // - create a separate template for the debugger controls
 
+        $el.on("change", "#debug-mode", function () {
+            if (this.checked) {
+                self.editor.editor.setReadOnly(true);
+                $el.find(".debugger-controls").show();
+            } else {
+                self.editor.editor.setReadOnly(false);
+                $el.find(".debugger-controls").hide();
+                self.postFrame({
+                    type: "stepper",
+                    action: "run"
+                });
+            }
+        });
+
         $el.on("click", "#debug-reset", function () {
             self.postFrame({
                 type: "stepper",
@@ -1010,6 +1024,9 @@ window.LiveEditor = Backbone.View.extend({
                 type: "stepper",
                 action: "run"
             });
+            $el.find("#step-over").removeAttr("disabled");
+            $el.find("#step-in").removeAttr("disabled");
+            $el.find("#step-out").removeAttr("disabled");
         });
 
         $el.on("click", "#debug-pause", function () {
@@ -1676,10 +1693,14 @@ window.LiveEditor = Backbone.View.extend({
             this.$el.find("#step-out").attr("disabled", "");
             editor.setHighlightActiveLine(false);
         } else if (data.action === "step") {
-            console.log("step: %o", data.value);
-            var lineno = data.value.lineno;
-            editor.gotoLine(lineno);
-            editor.setHighlightActiveLine(true);
+            if (data.value && data.value.lineno) {
+                var lineno = data.value.lineno;
+                editor.gotoLine(lineno);
+                editor.setHighlightActiveLine(true);
+            } else {
+                // TODO: figure out who's send a "step" without a lineno
+                editor.setHighlightActiveLine(false);
+            }
         }
     },
 

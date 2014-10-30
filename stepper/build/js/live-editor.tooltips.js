@@ -1770,7 +1770,7 @@ window.TooltipEngine = Backbone.View.extend({
             cb.target.on(cb.event, cb.fn);
         });
 
-        
+
         this.requestTooltipDefaultCallback = function() {  //Fallback to hiding
             ScratchpadAutosuggest.enableLiveCompletion(true);
             if (this.currentTooltip && this.currentTooltip.$el) {
@@ -1779,7 +1779,7 @@ window.TooltipEngine = Backbone.View.extend({
             }
         }.bind(this);
 
-        this.editor.on("requestTooltip", this.requestTooltipDefaultCallback);   
+        this.editor.on("requestTooltip", this.requestTooltipDefaultCallback);
     },
 
     remove: function() {
@@ -1790,7 +1790,7 @@ window.TooltipEngine = Backbone.View.extend({
             this.editor.off("requestTooltip", cb);
         }.bind(this));
         delete this.callbacks;
-        
+
         this.editor.off("requestTooltip", this.requestTooltipDefaultCallback);
     },
 
@@ -1824,7 +1824,7 @@ window.TooltipEngine = Backbone.View.extend({
         this.last = params;
 
         this.editor._emit("requestTooltip", params);
-    }, 
+    },
 
     // Returns true if we're inside a comment
     // This isn't a perfect check, but it is close enough.
@@ -1842,23 +1842,23 @@ TooltipEngine.classes = {};
   * Every Tooltip has the following major parts:
   * - initialize(), just accepts options and then tries to attach
   *   the html for the tooltip by callin render() and bind() as required
-  * 
+  *
   * - render() and bind() to set up the HTML
-  * 
-  * - A detector function. The detector functions are all bound to the 
-  *   requestTooltip event in their respective bind() method. They receive an event with 
-  *   information about where the cursor is and whether it got there because of a click, 
-  *   selection character added, etc. It chooses to either load its tooltip or let the 
+  *
+  * - A detector function. The detector functions are all bound to the
+  *   requestTooltip event in their respective bind() method. They receive an event with
+  *   information about where the cursor is and whether it got there because of a click,
+  *   selection character added, etc. It chooses to either load its tooltip or let the
   *   event keep bubbling
   *   > The detector function also sets aceLocation, which saves what portion of the
   *     text the selector is active for.
-  *   
-  * - updateText replaces whatever text is specified by the aceLocation 
+  *
+  * - updateText replaces whatever text is specified by the aceLocation
   *   with the new text. It is common for tooltips to override this function
-  *   so that they can accept a value in a different format, make it into a string 
+  *   so that they can accept a value in a different format, make it into a string
   *   and then pass the formatted value back to the function defined in TooltipBase
   *   to do the actual replace
-  * 
+  *
   * - placeOnScreen which determines where the HTML needs to be moved to in order
   *   for it to show up on by the cursor. This also pulls information from aceLocation
   *
@@ -1875,6 +1875,10 @@ window.TooltipBase = Backbone.View.extend({
     },
 
     placeOnScreen: function() {
+        // don't show tool tips when the editor is in readonly mode
+        if (this.parent.editor.getReadOnly()) {
+            return;
+        }
         var parent = this.parent;
         if (parent.currentTooltip && parent.currentTooltip !== this) {
             parent.currentTooltip.$el.hide();

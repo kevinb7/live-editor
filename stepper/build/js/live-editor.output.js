@@ -601,12 +601,13 @@ window.LiveEditorOutput = Backbone.View.extend({
     },
 
     handleStepperMessage: function(data) {
-        console.log("stepper data: %o", data);
-
         var stepper = this.output.stepper;
         var result;
 
         if (data.action === "run") {
+            if (stepper.halted()) {
+                stepper.reset();
+            }
             result = stepper.run();
             if (stepper.halted()) {
                 this.postParent({
@@ -688,12 +689,10 @@ window.LiveEditorOutput = Backbone.View.extend({
 
         if (data.action === "setBreakpoint") {
             stepper.setBreakpoint(data.lineno);
-            console.log("set breakpoint at: " + data.lineno);
         }
 
         if (data.action === "clearBreakpoint") {
             stepper.clearBreakpoint(data.lineno);
-            console.log("clear breakpoint at: " + data.lineno);
         }
     },
 

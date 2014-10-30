@@ -1210,7 +1210,7 @@ window.PJSOutput = Backbone.View.extend({
         this.bind();
 
         this.build(this.$canvas[0]);
-        if (options.useStepper) {
+        if (options.useStepper && Stepper.isBrowserSupported()) {
             this.stepper = new Stepper(this.canvas);
         }
 
@@ -1753,17 +1753,6 @@ window.PJSOutput = Backbone.View.extend({
             "*/\n" + userCode;
 
         var done = function(hintData, hintErrors) {
-            var ast = esprima.parse(userCode);
-            for (var i = 0; i < ast.body.length; i++) {
-                var node = ast.body[i];
-                // TODO: need to remove the "var i" declared within the for loop
-                if (node.type === "VariableDeclaration") {
-                    for (var j = 0; j < node.declarations.length; j++) {
-                        var decl = node.declarations[j];
-                        hintData.globals = _.without(hintData.globals, decl.id.name);
-                    }
-                }
-            }
             this.lintDone(userCode, hintData, hintErrors, callback);
         }.bind(this);
 
