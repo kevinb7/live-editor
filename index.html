@@ -1,64 +1,107 @@
+<!DOCTYPE html>
 <html>
-<head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Live Editor Simple Demo</title>
-    <link rel="stylesheet" href="build/css/live-editor.core_deps.css"/>
-    <link rel="stylesheet" href="build/css/live-editor.audio.css"/>
-    <link rel="stylesheet" href="build/css/live-editor.tooltips.css"/>
-    <link rel="stylesheet" href="build/css/live-editor.ui.css"/>
-    <style>
-        body {
-            padding: 20px;
-        }
+<head lang="en">
+  <meta charset="UTF-8">
+  <title></title>
+  <style>
+    body {
+      font-family: sans-serif;
+      font-size: 1.3em;
+      margin: 20px;
+    }
 
-        h1 {
-            padding: 0;
-            margin: 0 0 20px 0;
-        }
-        #sample-live-editor {
-            padding: 0;
-        }
+    h1,h2 {
+      margin-top: 0.5em;
+      margin-bottom: 0;
+    }
 
-        .ace_breakpoint {
-            background: lightgreen;
-        }
-    </style>
+    h3 {
+      margin-top: 1em;
+      margin-bottom: 0;
+    }
+
+    div {
+      width: 600px;
+      padding: 10px 20px;
+      margin-top: 20px;
+      margin-left: -20px;
+    }
+
+    #pretty_print {
+      background-color: #2ec0ff;
+    }
+
+    #stepper {
+      background-color: #ffcb02;
+    }
+
+    p {
+      margin-top: 0;
+    }
+
+    .code {
+      font-family: monospace;
+    }
+  </style>
 </head>
 <body>
-    <h1>Live Editor Example</h1>
-    <div id="sample-live-editor"></div>
+<h1>Hackweek Projects</h1>
+by kevinb7
 
-    <script src="build/js/live-editor.core_deps.js"></script>
-    <script src="build/js/live-editor.editor_ace_deps.js"></script>
-    <script src="build/js/live-editor.audio.js"></script>
-    <script src="build/js/live-editor.shared.js"></script>
-    <script src="build/js/live-editor.tooltips.js"></script>
-    <script src="build/js/live-editor.ui.js"></script>
-    <script src="build/js/live-editor.editor_ace.js"></script>
-    <script src="build/js/live-editor.debugger.js"></script>
+<div id="stepper">
+  <h2>Stepper</h2>
+  <i>Debugging for the live-editor.</i>
+  <h3>Summary</h3>
+  <p>
+    This implements basic debugger operations such as step over, step in, step out.
+    Users can also set and clear breakpoints.
+  </p>
+  <h3>Note</h3>
+  <p>
+    Requires a browser that supports generators.<br>
+    Try the current version of Firefox or Chrome dev channel.
+  </p>
+  <!--<p>-->
+    <!--<b>How does it work?</b><br>-->
+    <!--We re-write a user's code and convert their program into a generator.  Generators-->
+    <!--are part of the ES6 standard and they allow you to call function multiple times-->
+    <!--and re-enter that function at different places.  Where the generator exits (and-->
+    <!--subsequently re-enters) is controlled by yield statements.-->
+  <!--</p>-->
+  <!--<p>-->
+    <!--In order to be able to single step through a function we also inject yield-->
+    <!--statements after every line.  These yield statements also return the current-->
+    <!--line number so that we can update the editor UI to show users which line they're-->
+    <!--currently on.-->
+  <!--</p>-->
+  <!--<p>-->
+    <!--<b>What Doesn't Work</b><br>-->
+    <!--<ul>-->
+      <!--<li>User defined functions with return values</li>-->
+      <!--<li>Stepping into special functions such as <span class="code">draw()</span></li>-->
+    <!--</ul>-->
+  <!--</p>-->
+  <p>
+    <a href="stepper/index.html">Live Demo</a>
+  </p>
+</div>
 
-    <script>
-    window.liveEditor = new LiveEditor({
-        el: $("#sample-live-editor"),
-        code: window.localStorage["test-code"] || "rect(10, 10, 100, 100);",
-        width: 400,
-        height: 400,
-        editorHeight: "80%",
-        autoFocus: true,
-        workersDir: "build/workers/",
-        externalsDir: "build/external/",
-        imagesDir: "build/images/",
-        execFile: "output.html",
-        jshintFile: "build/external/jshint/jshint.js"
-    });
-    liveEditor.editor.on("change", function() {
-        window.localStorage["test-code"] = liveEditor.editor.text();
-    });
-    ScratchpadDebugger.init({
-        liveEditor: liveEditor,
-        editor: liveEditor.editor.editor
-    });
-    ScratchpadAutosuggest.init(liveEditor.editor.editor);
-    </script>
+<div id="pretty_print">
+  <h2>Pretty_Print</h2>
+  Code fromatting for the live-editor.
+  <h3>Summary</h3>
+  <p>
+    Reformats code to enforce proper indentation.
+  </p>
+  <h3>Note</h3>
+  <p>
+    To get exactly the behaviour we want we'll have to modify the underlying
+    libraries.
+  </p>
+  <p>
+    <a href="pretty_print/index.html">Live Demo</a>
+  </p>
+</div>
+
 </body>
 </html>
