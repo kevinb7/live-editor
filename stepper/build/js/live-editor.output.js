@@ -608,7 +608,12 @@ window.LiveEditorOutput = Backbone.View.extend({
 
         if (data.action === "run") {
             result = stepper.run();
-            if (result) {
+            if (stepper.halted()) {
+                this.postParent({
+                    type: "stepper",
+                    action: "halted"
+                });
+            } else {
                 this.postParent({
                     type: "stepper",
                     action: "step",

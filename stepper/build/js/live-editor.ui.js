@@ -1669,14 +1669,15 @@ window.LiveEditor = Backbone.View.extend({
     },
 
     listenStepperMessages: function(data) {
+        var editor = this.editor.editor;
         if (data.action === "halted") {
             this.$el.find("#step-over").attr("disabled", "");
             this.$el.find("#step-in").attr("disabled", "");
             this.$el.find("#step-out").attr("disabled", "");
+            editor.setHighlightActiveLine(false);
         } else if (data.action === "step") {
             console.log("step: %o", data.value);
             var lineno = data.value.lineno;
-            var editor = this.editor.editor;
             editor.gotoLine(lineno);
             editor.setHighlightActiveLine(true);
         }
