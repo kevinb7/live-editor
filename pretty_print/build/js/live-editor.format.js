@@ -16,6 +16,9 @@ window.ScratchpadFormat = {
         worker.addEventListener("message", function (e) {
             if (e.data.type === "format") {
                 editor.session.doc.setValue(e.data.code);
+                var position = e.data.cursorPosition;
+                position.row--;
+                editor.moveCursorToPosition(position);
             }
             idle = true;
         });
@@ -24,13 +27,16 @@ window.ScratchpadFormat = {
 
         liveEditor.$el.find("#format-code").click(function () {
             var formatter = $select.val();
+            var position = editor.getCursorPosition();
+            position.row++;
 
             if (idle) {
                 idle = false;
                 worker.postMessage({
                     externalsDir: options.externalsDir,
                     formatter: formatter,
-                    code: editor.session.doc.getValue()
+                    code: editor.session.doc.getValue(),
+                    cursorPosition: position
                 });
             }
         });
