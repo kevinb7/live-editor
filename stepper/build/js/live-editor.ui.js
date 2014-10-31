@@ -111,7 +111,7 @@ function program13(depth0,data) {
   else { helper = (depth0 && depth0._); stack1 = typeof helper === functionType ? helper.call(depth0, options) : helper; }
   if (!helpers._) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(13, program13, data),data:data}); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\n                </div>\n            </div>\n            <div class=\"scratchpad-debugger\">\n                Debug Mode <input type=\"checkbox\" id=\"debug-mode\">\n                <div class=\"debugger-controls\" style=\"display:none;margin-top:5px;\">\n                    <button id=\"debug-reset\">Restart and Pause</button>\n                    <button id=\"debug-run\">Run</button>\n                    <span style=\"width:50px;display:inline-block;\"></span>\n                    <button id=\"step-over\" disabled>Step Over</button>\n                    <button id=\"step-in\" disabled>Step In</button>\n                    <button id=\"step-out\" disabled>Step Out</button>\n                </div>\n            </div>\n        </div>\n\n        <div class=\"scratchpad-toolbar scratchpad-dev-record-row\" style=\"display:none;\"></div>\n    </div>\n</div>";
+  buffer += "\n                </div>\n            </div>\n            <div class=\"scratchpad-debugger\">\n                Debug Mode <input type=\"checkbox\" id=\"debug-mode\">\n                <span class=\"debugger-level\" style=\"display:none;margin-left:20px;\">\n                    Level\n                    <select id=\"debugger-level-select\">\n                        <option value=\"beginner\" selected>Beginner</option>\n                        <option value=\"advanced\">Advanced</option>\n                    </select>\n                </span>\n                <div class=\"debugger-simple\" style=\"display:none;margin-top:5px;\">\n                    <button class=\"debug-begin\" style=\"margin-right:20px;\">Begin</button>\n                    <button class=\"step-in\" disabled>Step</button>\n                    <button class=\"debug-end\" style=\"margin-left:20px;\">End</button>\n                </div>\n                <div class=\"debugger-complex\" style=\"display:none;margin-top:5px;\">\n                    <button class=\"debug-restart\" style=\"margin-right:10px;\">Restart</button>  <!-- start/restart -->\n                    <button class=\"step-over\" disabled>Step Over</button>\n                    <button class=\"step-in\" disabled>Step In</button>\n                    <button class=\"step-out\" disabled>Step Out</button>\n                    <button class=\"debug-continue\" style=\"margin-left:10px;\">Continue</button>\n                </div>\n            </div>\n        </div>\n\n        <div class=\"scratchpad-toolbar scratchpad-dev-record-row\" style=\"display:none;\"></div>\n    </div>\n</div>";
   return buffer;
   });;
 window.ScratchpadDrawCanvas = Backbone.View.extend({
@@ -996,12 +996,25 @@ window.LiveEditor = Backbone.View.extend({
         // - create a separate template for the debugger controls
 
         $el.on("change", "#debug-mode", function () {
+            self.debuggerLevel = $el.find("#debugger-level-select option:selected").val();
+
             if (this.checked) {
                 self.editor.editor.setReadOnly(true);
-                $el.find(".debugger-controls").show();
+
+                $el.find(".debugger-level").show();
+
+                if (self.debuggerLevel === "beginner") {
+                    $el.find(".debugger-simple").show();
+                } else if (self.debuggerLevel === "advanced") {
+                    $el.find(".debugger-complex").show();
+                }
             } else {
                 self.editor.editor.setReadOnly(false);
-                $el.find(".debugger-controls").hide();
+
+                $el.find(".debugger-level").hide();
+                $el.find(".debugger-simple").hide();
+                $el.find(".debugger-complex").hide();
+
                 self.postFrame({
                     type: "stepper",
                     action: "run"
@@ -1009,48 +1022,81 @@ window.LiveEditor = Backbone.View.extend({
             }
         });
 
-        $el.on("click", "#debug-reset", function () {
+        $el.on("change", "#debugger-level-select", function () {
+            self.debuggerLevel = $(this).find("option:selected").val();
+
+            if (self.debuggerLevel === "beginner") {
+                $el.find(".debugger-complex").hide();
+                $el.find(".debugger-simple").show();
+            } else if (self.debuggerLevel === "advanced") {
+                $el.find(".debugger-simple").hide();
+                $el.find(".debugger-complex").show();
+            }
+        });
+
+        $el.on("click", ".debug-begin", function () {
             self.postFrame({
                 type: "stepper",
                 action: "reset"
             });
-            $el.find("#step-over").removeAttr("disabled");
-            $el.find("#step-in").removeAttr("disabled");
-            $el.find("#step-out").removeAttr("disabled");
+
+            $el.find(".step-over").removeAttr("disabled");
+            $el.find(".step-in").removeAttr("disabled");
+            $el.find(".step-out").removeAttr("disabled");
         });
 
-        $el.on("click", "#debug-run", function () {
+        $el.on("click", ".debug-end", function () {
+            // TODO: run to end
+            // right we only run the next breakpoint
+
             self.postFrame({
                 type: "stepper",
                 action: "run"
             });
-            $el.find("#step-over").removeAttr("disabled");
-            $el.find("#step-in").removeAttr("disabled");
-            $el.find("#step-out").removeAttr("disabled");
         });
 
-        $el.on("click", "#debug-pause", function () {
+        $el.on("click", ".debug-restart", function () {
             self.postFrame({
                 type: "stepper",
-                action: "pause"
+                action: "reset"
             });
+
+            self.postFrame({
+                type: "stepper",
+                action: "run"
+            });
+
+            $el.find(".step-over").removeAttr("disabled");
+            $el.find(".step-in").removeAttr("disabled");
+            $el.find(".step-out").removeAttr("disabled");
         });
 
-        $el.on("click", "#step-over", function () {
+        $el.on("click", ".debug-continue", function () {
+            self.postFrame({
+                type: "stepper",
+                action: "run"
+            });
+
+            $el.find(".step-over").removeAttr("disabled");
+            $el.find(".step-in").removeAttr("disabled");
+            $el.find(".step-out").removeAttr("disabled");
+        });
+
+        $el.on("click", ".step-over", function () {
             self.postFrame({
                 type: "stepper",
                 action: "stepOver"
             });
         });
 
-        $el.on("click", "#step-in", function () {
+        $el.on("click", ".step-in", function () {
             self.postFrame({
                 type: "stepper",
                 action: "stepIn"
             });
         });
 
-        $el.on("click", "#step-out", function () {
+        $el.on("click", ".step-out", function () {
             self.postFrame({
                 type: "stepper",
                 action: "stepOut"
@@ -1688,9 +1734,9 @@ window.LiveEditor = Backbone.View.extend({
     listenStepperMessages: function(data) {
         var editor = this.editor.editor;
         if (data.action === "halted") {
-            this.$el.find("#step-over").attr("disabled", "");
-            this.$el.find("#step-in").attr("disabled", "");
-            this.$el.find("#step-out").attr("disabled", "");
+            this.$el.find(".step-over").attr("disabled", "");
+            this.$el.find(".step-in").attr("disabled", "");
+            this.$el.find(".step-out").attr("disabled", "");
             editor.setHighlightActiveLine(false);
         } else if (data.action === "step") {
             if (data.value && data.value.lineno) {
