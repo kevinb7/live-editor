@@ -12,11 +12,9 @@
 
     h1,h2 {
       margin-top: 0.5em;
-      margin-bottom: 0;
     }
 
-    h3 {
-      margin-top: 1em;
+    h1 {
       margin-bottom: 0;
     }
 
@@ -39,67 +37,37 @@
       margin-top: 0;
     }
 
-    .code {
-      font-family: monospace;
+    a {
+      margin-right: 10px;
     }
   </style>
 </head>
 <body>
 <h1>Hackweek Projects</h1>
-by kevinb7
+by kevinb7 <a href="https://github.com/kevinb7">https://github.com/kevinb7</a>
 
 <div id="stepper">
   <h2>Stepper</h2>
-  <i>Debugging for the live-editor.</i>
-  <h3>Summary</h3>
   <p>
-    This implements basic debugger operations such as step over, step in, step out.
-    Users can also set and clear breakpoints.
+    Debug your code in the live-editor.
   </p>
-  <h3>Note</h3>
   <p>
-    Requires a browser that supports generators.<br>
-    Try the current version of Firefox or Chrome dev channel.
+    <b>Note:</b> Firefox 26+ or Chrome 39+ required.
   </p>
-  <!--<p>-->
-    <!--<b>How does it work?</b><br>-->
-    <!--We re-write a user's code and convert their program into a generator.  Generators-->
-    <!--are part of the ES6 standard and they allow you to call function multiple times-->
-    <!--and re-enter that function at different places.  Where the generator exits (and-->
-    <!--subsequently re-enters) is controlled by yield statements.-->
-  <!--</p>-->
-  <!--<p>-->
-    <!--In order to be able to single step through a function we also inject yield-->
-    <!--statements after every line.  These yield statements also return the current-->
-    <!--line number so that we can update the editor UI to show users which line they're-->
-    <!--currently on.-->
-  <!--</p>-->
-  <!--<p>-->
-    <!--<b>What Doesn't Work</b><br>-->
-    <!--<ul>-->
-      <!--<li>User defined functions with return values</li>-->
-      <!--<li>Stepping into special functions such as <span class="code">draw()</span></li>-->
-    <!--</ul>-->
-  <!--</p>-->
   <p>
     <a href="stepper/index.html">Live Demo</a>
+    <a href="stepper_more_info.html">More Info</a>
   </p>
 </div>
 
 <div id="pretty_print">
-  <h2>Pretty_Print</h2>
-  Code fromatting for the live-editor.
-  <h3>Summary</h3>
+  <h2>Pretty Print</h2>
   <p>
-    Reformats code to enforce proper indentation.
-  </p>
-  <h3>Note</h3>
-  <p>
-    To get exactly the behaviour we want we'll have to modify the underlying
-    libraries.
+    Reformat code to enforce proper indentation.
   </p>
   <p>
     <a href="pretty_print/index.html">Live Demo</a>
+    <a href="pretty_print_more_info.html">More Info</a>
   </p>
 </div>
 

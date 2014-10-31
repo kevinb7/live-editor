@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+  <meta charset="UTF-8">
+  <title></title>
+  <style>
+    body {
+      width: 600px;
+      font-size: 1.3em;
+      font-family: sans-serif;
+      text-align: justify;
+    }
+  </style>
+</head>
+<body>
+<h1>Stepper</h1>
+<h2>Summary</h2>
+ES6 generators are used to implement stepping behaviour.
+<h2>How it works</h2>
+<p>
+  We re-write a user's code and convert their program into a generator.  Generators
+  are part of the ES6 standard and they allow you to call function multiple times
+  and re-enter that function at different places.  Where the generator exits (and
+  subsequently re-enters) is controlled by <code>yield</code> keyword.
+</p>
+<p>
+  In order to be able to single step through a function we inject <code>yield</code>
+  statements after every line.  These yield statements also return the current
+  line number so that we can update the editor UI to show users which line they're
+  currently on.
+</p>
+<p>
+  This approach is based on the work of Amjad Masad.  He created debug.js which
+  I initially tried to use, but it creates an iframe for sandboxing much like
+  we do.  Unfortunately, I wasn't able to make it work with processing.js even
+  in a minimal example.  It wasn't setting certain properties correctly such as
+  the fill.  I think the iframe was interferring with processing so my code
+  drops the iframe.
+</p>
+<h3>Before</h3>
+<pre>
+var foo = function() {
+    fill(255, 0, 0);
+    rect(100,100,50,50);
+};
+
+foo();
+</pre>
+<h3>After</h3>
+<pre>
+return function*(){
+  with(arguments[0]){
+    yield { lineno: 1 };
+    var foo = function* () {
+      yield { lineno: 2 };
+      fill(255, 0, 0);
+      yield { lineno: 3 };
+      rect(100, 100, 50, 50);
+    };
+    yield { lineno: 6 };
+    yield {
+      generator: foo(),
+      lineno: 6,
+      name: 'foo'
+    };
+  }
+}
+</pre>
+<h2>Code Structure</h2>
+<p>
+  live-editor.js setups up event handlers for the controls and then communicates
+  with output.js using postFrame/listenMessages.  The debugger itself is an
+  instance of a <code>Stepper</code> which lives inside pjs-output.js.  Each
+  time the code is updated, <code>PJSOutput.exec</code> is called.  Instead of
+  code being run with
+  <pre>
+  (new Function(code)).apply(this.canvas, contexts);</pre>
+  we do the following instead:
+  <pre>
+  this.stepper.load(originalCode);
+  this.stepper.run();</pre>
+<p>
+  The context is passed to the <code>Stepper</code>'s constructor.  The context
+  could be set anytime before <code>load</code> and <code>run</code> are called.
+</p>
+<p>
+  <code>Stepper</code> is implemented a submodule.  It current has 35 unit tests
+  which are all passing.  I wanted to automate the running of the unit tests,
+  but unfortunately PhantomJS doesn't support generators so this will take more
+  work than usual.
+</p>
+<h2>Remaining Work</h2>
+<ul>
+  <li>Step into functions with return values</li>
+  <li>Step into special functions, e.g. <code>draw</code></li>
+  <li>Automatically step through with delay</li>
+  <li>Call stack reporting</li>
+  <li>List in scope variables and their values</li>
+  <li>Handle multiple contexts</li>
+  <li>Automate tests</li>
+</ul>
+<h2>References:</h2>
+<ul>
+  <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function*">generators on MDN</a></li>
+  <li><a href="https://github.com/amasad/debugjs">debugjs</a></li>
+  <li><a href="https://github.com/kevinb7/stepper">stepper</a></li>
+</ul>
+</body>
+</html>

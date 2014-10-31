@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+  <meta charset="UTF-8">
+  <title></title>
+  <style>
+    body {
+      width: 600px;
+      font-size: 1.3em;
+      font-family: sans-serif;
+      text-align: justify;
+    }
+  </style>
+</head>
+<body>
+<h1>Pretty Print</h1>
+<h2>Summary</h2>
+<p>
+  Formatting is done in a worker using either esformatter or esprima + escodegen.
+</p>
+<h2>Pros & Cons</h2>
+<p>
+  Esformatter preserves empty lines better, but it does correct line breaks in
+  the middle of an argument list in a function call which the "Oh noes!" doesn't
+  like.
+</p>
+<p>
+  Esprima + escodegen does remove line breaks in the middle of an argument list,
+  but it also removes valid uses of extra line breaks such as make space between
+  function definitions.
+</p>
+<p>
+  Although esprima + escodegen doesn't have the exact behaviour we want it does
+  allow use to restore the cursor to the correct location.  More on this below.
+  To make escodegen behave the way we want, we'll have to modify the code a bit
+  and pass in a string with the original source (because whitespace isn't
+  included in the AST)
+</p>
+<h2>Preserving Cursor Position</h2>
+<p>
+  Keeping track of the cursor's position was accomplished by finding the node
+  containing the cursor, parsing the formatted code, and find the matching node
+  in the new AST.
+</p>
+  In order to find the cursor containing node, we traverse the AST using
+  ast-walker.  It's a simple tree walker that supports several delegate methods:
+  <ul>
+    <li><code>shouldWalk(node, name)</code> – override to stop recursing early</li>
+    <li><code>enter(node, name)</code> – called with the walker enters the node</li>
+    <li><code>exit(node, name)</code> – called with the walker exits the ndoe</li>
+  </ul>
+  The <code>name</code> parameter contains the name of the current node.
+<p>
+  As the walker traverse the tree, it compares the cursor's position represented
+  by line and column.  Inside of <code>shouldWalk(node, name)</code> we check
+  to see if the cursor is inside of the node and if it isn't we stop recursing
+  through that branch of the tree.  Then in <code>enter(node, name)</code> we
+  concatenate each <code>name</code> together to form a JSONPath style path.
+</p>
+<p>
+  After the code has been formatted, it's parsed a second time.
+  <code>jsonPath.eval(ast, path)</code> is used to find the node in the new AST
+  that correspond to the one in the old tree that the cursor was in.
+</p>
+<h2>Remaining Work</h2>
+<ul>
+  <li>Update escodegen to preserve blank lines</li>
+  <li>Write tests</li>
+</ul>
+<h2>References</h2>
+<ul>
+  <li><a href="https://github.com/s3u/JSONPath">JSONPath</a></li>
+  <li><a href="https://github.com/kevinb7/ast-walker">ast-walker</a></li>
+</ul>
+</body>
+</html>
