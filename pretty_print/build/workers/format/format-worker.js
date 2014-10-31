@@ -73,7 +73,12 @@ self.onmessage = function(event) {
         walker.walk(ast, "program");
 
         ast = escodegen.attachComments(ast, ast.comments, ast.tokens);
-        output = escodegen.generate(ast, { comment: true });
+        output = escodegen.generate(ast, {
+            comment: true,
+            format: {
+                quotes: "double"
+            }
+        });
 
         // parse the output so we can get the location of the cursor
         // after pretty printing
