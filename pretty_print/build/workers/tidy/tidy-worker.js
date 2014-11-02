@@ -37,8 +37,8 @@ self.onmessage = function(event) {
     walker.enter = function (node, name) {
         if (name !== "program") {
             path += "." + name;
-            cursorNode = node;
         }
+        cursorNode = node;
     };
     walker.shouldWalk = function (node) {
         var loc = node.loc;
@@ -57,8 +57,14 @@ self.onmessage = function(event) {
             return false;
         }
     };
-
     walker.walk(ast, "program");
+
+    // save the relative position of the cursor within the node
+    // right now we only do this if the node only spans a single row
+    var relativeColumn = 0;
+    if (cursorNode.loc.start.row === cursorNode.loc.end.row) {
+        relativeColumn = cursorNode.loc.end.column - cursorPosition.column;
+    }
 
     ast = escodegen.attachComments(ast, ast.comments, ast.tokens);
     output = escodegen.generate(ast, {
@@ -79,7 +85,7 @@ self.onmessage = function(event) {
         var end = cursorNode.loc.end;
         cursorPosition = {
             row: end.line,
-            column: end.column
+            column: end.column - relativeColumn
         };
     }
 

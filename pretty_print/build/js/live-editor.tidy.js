@@ -6,24 +6,31 @@ window.ScratchpadTidy = {
         var editor = options.editor;
         var worker = new Worker(options.workersDir + "tidy/tidy-worker.js");
         var idle = true;
-
-        // TODO:
-        // - put up overlay when formatting the code
-        // - scroll so that the line the cursor was on is visible
-        // - put the cursor back to its original location after formatting
+        var $tidyButton = liveEditor.$el.find("#tidy-code");
+        var rowsFromTop;
 
         worker.addEventListener("message", function (e) {
             if (e.data.type === "tidy") {
                 editor.session.doc.setValue(e.data.code);
                 var position = e.data.cursorPosition;
                 position.row--;
+                
+                var topRow = position.row - rowsFromTop;
+                
+                editor.clearSelection();
                 editor.moveCursorToPosition(position);
+                editor.scrollToLine(topRow, false, true);
+                editor.focus();
+                
+                liveEditor.enable(true);
+                $tidyButton.prop("disabled", false);
             }
             idle = true;
         });
 
-        liveEditor.$el.find("#tidy-code").click(function () {
+        $tidyButton.click(function () {
             var position = editor.getCursorPosition();
+            rowsFromTop = position.row - editor.getFirstVisibleRow();
             position.row++;
 
             if (idle) {
@@ -33,6 +40,8 @@ window.ScratchpadTidy = {
                     code: editor.session.doc.getValue(),
                     cursorPosition: position
                 });
+                liveEditor.disable(true);
+                $tidyButton.prop("disabled", true);
             }
         });
     }
