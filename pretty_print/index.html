@@ -31,7 +31,7 @@
     <script src="build/js/live-editor.tooltips.js"></script>
     <script src="build/js/live-editor.ui.js"></script>
     <script src="build/js/live-editor.editor_ace.js"></script>
-    <script src="build/js/live-editor.format.js"></script>
+    <script src="build/js/live-editor.tidy.js"></script>
 
     <script>
     window.liveEditor = new LiveEditor({
@@ -51,7 +51,7 @@
         window.localStorage["test-code"] = liveEditor.editor.text();
     });
     ScratchpadAutosuggest.init(liveEditor.editor.editor);
-    ScratchpadFormat.init({
+    ScratchpadTidy.init({
         editor: liveEditor.editor.editor,
         liveEditor: liveEditor,
         externalsDir: liveEditor.externalsDir,

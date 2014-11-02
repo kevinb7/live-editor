@@ -1,11 +1,10 @@
 /* Provides pretty-printing functionality */
-window.ScratchpadFormat = {
+window.ScratchpadTidy = {
 
     init: function (options) {
         var liveEditor = options.liveEditor;
         var editor = options.editor;
-        var worker = new Worker(options.workersDir +
-            "format/format-worker.js");
+        var worker = new Worker(options.workersDir + "tidy/tidy-worker.js");
         var idle = true;
 
         // TODO:
@@ -14,7 +13,7 @@ window.ScratchpadFormat = {
         // - put the cursor back to its original location after formatting
 
         worker.addEventListener("message", function (e) {
-            if (e.data.type === "format") {
+            if (e.data.type === "tidy") {
                 editor.session.doc.setValue(e.data.code);
                 var position = e.data.cursorPosition;
                 position.row--;
@@ -23,10 +22,7 @@ window.ScratchpadFormat = {
             idle = true;
         });
 
-        var $select = liveEditor.$el.find("#formatter");
-
-        liveEditor.$el.find("#format-code").click(function () {
-            var formatter = $select.val();
+        liveEditor.$el.find("#tidy-code").click(function () {
             var position = editor.getCursorPosition();
             position.row++;
 
@@ -34,7 +30,6 @@ window.ScratchpadFormat = {
                 idle = false;
                 worker.postMessage({
                     externalsDir: options.externalsDir,
-                    formatter: formatter,
                     code: editor.session.doc.getValue(),
                     cursorPosition: position
                 });
