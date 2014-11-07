@@ -2459,6 +2459,7 @@ window.PJSOutput = Backbone.View.extend({
 
         try {
 
+            // TODO: update this to use the stepper only when debugging
             if (this.stepper) {
                 this.stepper.load(originalCode);
                 this.stepper.run();

@@ -1040,6 +1040,11 @@ window.LiveEditor = Backbone.View.extend({
                 action: "reset"
             });
 
+            self.postFrame({
+                type: "stepper",
+                action: "stepIn"
+            });
+
             $el.find(".step-over").removeAttr("disabled");
             $el.find(".step-in").removeAttr("disabled");
             $el.find(".step-out").removeAttr("disabled");
@@ -1051,7 +1056,8 @@ window.LiveEditor = Backbone.View.extend({
 
             self.postFrame({
                 type: "stepper",
-                action: "run"
+                action: "run",
+                ignoreBreakpoints: true
             });
         });
 
@@ -1733,18 +1739,18 @@ window.LiveEditor = Backbone.View.extend({
 
     listenStepperMessages: function(data) {
         var editor = this.editor.editor;
+
         if (data.action === "halted") {
             this.$el.find(".step-over").attr("disabled", "");
             this.$el.find(".step-in").attr("disabled", "");
             this.$el.find(".step-out").attr("disabled", "");
             editor.setHighlightActiveLine(false);
         } else if (data.action === "step") {
-            if (data.value && data.value.lineno) {
-                var lineno = data.value.lineno;
-                editor.gotoLine(lineno);
+            if (data.line) {
+                editor.gotoLine(data.line);
                 editor.setHighlightActiveLine(true);
             } else {
-                // TODO: figure out who's send a "step" without a lineno
+                // TODO: figure out who's sending a "step" without a line
                 editor.setHighlightActiveLine(false);
             }
         }

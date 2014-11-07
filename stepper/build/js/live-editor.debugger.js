@@ -24150,7 +24150,7 @@ window.ScratchpadDebugger = {
                 liveEditor.postFrame({
                     type: "stepper",
                     action: "clearBreakpoint",
-                    lineno: row + 1
+                    line: row + 1
                 });
             } else {
                 e.editor.session.setBreakpoint(row);
@@ -24158,7 +24158,7 @@ window.ScratchpadDebugger = {
                 liveEditor.postFrame({
                     type: "stepper",
                     action: "setBreakpoint",
-                    lineno: row + 1
+                    line: row + 1
                 });
             }
 

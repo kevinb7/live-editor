@@ -24,24 +24,29 @@ self.onmessage = function(event) {
     JSHINT(event.data.code);
 
     // Remove all top scope user defined variables from JSHint's list of globals
-    var data = JSHINT.data();
-    var ast = esprima.parse(event.data.code);
-    var i, j, decl;
-    var topScopeUserVars = [];
+    // esprima can throw so wrap it in a try-catch
+    try {
+        var data = JSHINT.data();
+        var ast = esprima.parse(event.data.code);
+        var i, j, decl;
+        var topScopeUserVars = [];
 
-    for (i = 0; i < ast.body.length; i++) {
-        var node = ast.body[i];
-        if (node.type === "VariableDeclaration") {
-            for (j = 0; j < node.declarations.length; j++) {
-                decl = node.declarations[j];
-                topScopeUserVars.push(decl.id.name);
-            }
-        } else if (node.type === "ForStatement") {
-            for (j = 0; j < node.init.declarations.length; j++) {
-                decl = node.init.declarations[j];
-                topScopeUserVars.push(decl.id.name);
+        for (i = 0; i < ast.body.length; i++) {
+            var node = ast.body[i];
+            if (node.type === "VariableDeclaration") {
+                for (j = 0; j < node.declarations.length; j++) {
+                    decl = node.declarations[j];
+                    topScopeUserVars.push(decl.id.name);
+                }
+            } else if (node.type === "ForStatement") {
+                for (j = 0; j < node.init.declarations.length; j++) {
+                    decl = node.init.declarations[j];
+                    topScopeUserVars.push(decl.id.name);
+                }
             }
         }
+    } catch (e) {
+        console.log("esprima error on jshint-worker: %o", e);
     }
 
     data.globals = _.difference(data.globals, topScopeUserVars);

@@ -602,13 +602,13 @@ window.LiveEditorOutput = Backbone.View.extend({
 
     handleStepperMessage: function(data) {
         var stepper = this.output.stepper;
-        var result;
+        var action;
 
         if (data.action === "run") {
             if (stepper.halted()) {
                 stepper.reset();
             }
-            result = stepper.run();
+            action = stepper.run(data.ignoreBreakpoints);
             if (stepper.halted()) {
                 this.postParent({
                     type: "stepper",
@@ -618,29 +618,18 @@ window.LiveEditorOutput = Backbone.View.extend({
                 this.postParent({
                     type: "stepper",
                     action: "step",
-                    value: result.value
+                    line: action.line
                 });
             }
         }
 
         if (data.action === "reset") {
             stepper.reset();
-
-            // hack to clear the canvas
-            this.output.canvas.fill(255);
-            this.output.canvas.rect(-5,-5,410,410);
-
-            // get the starting location
-            result = stepper.stepOver();
-            this.postParent({
-                type: "stepper",
-                action: "step",
-                value: result.value
-            });
+            this.output.clear();
         }
 
         if (data.action === "stepOver") {
-            result = stepper.stepOver();
+            action = stepper.stepOver();
             if (stepper.halted()) {
                 this.postParent({
                     type: "stepper",
@@ -650,13 +639,13 @@ window.LiveEditorOutput = Backbone.View.extend({
                 this.postParent({
                     type: "stepper",
                     action: "step",
-                    value: result.value
+                    line: action.line
                 });
             }
         }
 
         if (data.action === "stepIn") {
-            result = stepper.stepIn();
+            action = stepper.stepIn();
             if (stepper.halted()) {
                 this.postParent({
                     type: "stepper",
@@ -666,13 +655,13 @@ window.LiveEditorOutput = Backbone.View.extend({
                 this.postParent({
                     type: "stepper",
                     action: "step",
-                    value: result.value
+                    line: action.line
                 });
             }
         }
 
         if (data.action === "stepOut") {
-            result = stepper.stepOut();
+            action = stepper.stepOut();
             if (stepper.halted()) {
                 this.postParent({
                     type: "stepper",
@@ -682,17 +671,17 @@ window.LiveEditorOutput = Backbone.View.extend({
                 this.postParent({
                     type: "stepper",
                     action: "step",
-                    value: result.value
+                    line: action.line
                 });
             }
         }
 
         if (data.action === "setBreakpoint") {
-            stepper.setBreakpoint(data.lineno);
+            stepper.setBreakpoint(data.line);
         }
 
         if (data.action === "clearBreakpoint") {
-            stepper.clearBreakpoint(data.lineno);
+            stepper.clearBreakpoint(data.line);
         }
     },
 
