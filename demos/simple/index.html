@@ -18,12 +18,15 @@
         #sample-live-editor {
             padding: 0;
         }
+        iframe {
+            border: none;
+        }
     </style>
 </head>
 <body>
     <h1>Live Editor Example</h1>
     <div id="sample-live-editor"></div>
-
+    <script src="/socket.io/socket.io.js"></script>
     <script src="../../build/js/live-editor.core_deps.js"></script>
     <script src="../../build/js/live-editor.editor_ace_deps.js"></script>
     <script src="../../build/js/live-editor.audio.js"></script>

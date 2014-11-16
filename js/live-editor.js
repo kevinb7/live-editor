@@ -29,6 +29,17 @@ window.LiveEditor = Backbone.View.extend({
     editors: {},
 
     initialize: function(options) {
+        var self = this;
+
+        this.socket = io('http://localhost/editor');
+        this.socket.on('ready', function () {
+            self.runCode(self.editor.text());
+            self.outputState = "running";
+        });
+        this.socket.on('server_message', function (data) {
+            self.handleData(data);
+        });
+
         this.uniq = Math.floor(Math.random()*100);
 
         this.workersDir = this._qualifyURL(options.workersDir);
@@ -157,7 +168,7 @@ window.LiveEditor = Backbone.View.extend({
 
     render: function() {
         this.$el.html(Handlebars.templates["live-editor"]({
-            execFile: this.execFile,
+//            execFile: this.execFile,
             imagesDir: this.imagesDir,
             colors: this.colors
         }));
@@ -182,7 +193,7 @@ window.LiveEditor = Backbone.View.extend({
         $(window).on("message", this.handleMessagesBound);
 
         // When the frame loads, execute the code
-        // We don't use markDirty here, because we know 
+        // We don't use markDirty here, because we know
         // that nothing could have succeeded before load
         $el.find("#output-frame").on("load", function() {
             this.runCode(this.editor.text());
@@ -395,7 +406,7 @@ window.LiveEditor = Backbone.View.extend({
             // Sometimes when Flash is blocked or the browser is slower,
             //  soundManager will fail to initialize at first,
             //  claiming no response from the Flash file.
-            // To handle that, we attempt a reboot 3 seconds after each 
+            // To handle that, we attempt a reboot 3 seconds after each
             //  timeout, clearing the timer if we get an onready during
             //  that time (which happens if user un-blocks flash).
             onready: function() {
@@ -890,6 +901,7 @@ window.LiveEditor = Backbone.View.extend({
     },
 
     handleMessages: function(e) {
+        debugger;
         var event = e.originalEvent;
         var data;
 
@@ -903,6 +915,10 @@ window.LiveEditor = Backbone.View.extend({
             return;
         }
 
+        this.handleData(data);
+    },
+
+    handleData: function (data) {
         this.trigger("update", data);
 
         // Hide loading overlay
@@ -921,7 +937,7 @@ window.LiveEditor = Backbone.View.extend({
         if (data.validate != null) {
             this.validation = data.validate;
         }
-        
+
         if (data.results) {
             if (this.outputState === "running") {
                 this.outputState = "clean";
@@ -932,7 +948,7 @@ window.LiveEditor = Backbone.View.extend({
         }
 
         if (this.editorType.indexOf("ace_") === 0 && data.results &&
-                data.results.assertions) {
+            data.results.assertions) {
             // Remove previously added markers
             var markers = this.editor.editor.session.getMarkers();
             _.each(markers, function(marker, markerId) {
@@ -940,13 +956,13 @@ window.LiveEditor = Backbone.View.extend({
             }.bind(this));
 
             var annotations = [];
-            for (var i = 0; i < data.results.assertions.length; i++) { 
+            for (var i = 0; i < data.results.assertions.length; i++) {
                 var unitTest = data.results.assertions[i];
                 annotations.push({
-                    row: unitTest.row, 
-                    column: unitTest.column, 
+                    row: unitTest.row,
+                    column: unitTest.column,
                     text: unitTest.text,
-                    type: "warning" 
+                    type: "warning"
                 });
                 // Underline the problem line to make it more obvious
                 //  if they don't notice the gutter icon
@@ -954,11 +970,11 @@ window.LiveEditor = Backbone.View.extend({
                 var line = this.editor.editor.session
                     .getDocument().getLine(unitTest.row);
                 this.editor.editor.session.addMarker(
-                   new AceRange(unitTest.row, 0, unitTest.row, line.length),
-                   "ace_problem_line", "text", false);
-           }
+                    new AceRange(unitTest.row, 0, unitTest.row, line.length),
+                    "ace_problem_line", "text", false);
+            }
 
-           this.editor.editor.session.setAnnotations(annotations);
+            this.editor.editor.session.setAnnotations(annotations);
         }
 
         if (data.results && _.isArray(data.results.errors)) {
@@ -1031,7 +1047,10 @@ window.LiveEditor = Backbone.View.extend({
 
         this.trigger("runCode", options);
 
-        this.postFrame(options);
+//        this.postFrame(options);
+
+        console.log('sending code to server');
+        this.socket.emit('message', options);
     },
 
     getScreenshot: function(callback) {
@@ -1071,7 +1090,7 @@ window.LiveEditor = Backbone.View.extend({
         // Unbind any handlers this function may have set for previous
         // screenshots
         $(window).off("message.getScreenshot");
-    
+
         // We're only expecting one screenshot back
         $(window).on("message.getScreenshot", function(e) {
             // Only call if the data is actually an image!
@@ -1079,7 +1098,7 @@ window.LiveEditor = Backbone.View.extend({
                 callback(e.originalEvent.data);
             }
         });
-    
+
         // Ask the frame for a screenshot
         this.postFrame({ screenshot: true });
     },

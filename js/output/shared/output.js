@@ -11,12 +11,18 @@ window.LiveEditorOutput = Backbone.View.extend({
         this.assertions = [];
 
         this.config = new ScratchpadConfig({});
-        
+
         if (options.outputType) {
             this.setOutput(options.outputType);
         }
 
         this.bind();
+
+        var self = this;
+        this.socket = io('http://localhost/output');
+        this.socket.on('server_message', function (data) {
+            self.handleData(data);
+        });
     },
 
     render: function() {
@@ -79,6 +85,10 @@ window.LiveEditorOutput = Backbone.View.extend({
             return;
         }
 
+        this.handleData(data);
+    },
+
+    handleData: function (data) {
         if (!this.output) {
             var outputType = data.outputType || _.keys(this.outputs)[0];
             this.setOutput(outputType);
@@ -139,12 +149,16 @@ window.LiveEditorOutput = Backbone.View.extend({
 
     // Send a message back to the parent frame
     postParent: function(data) {
-        // If there is no frameSource (e.g. we're not embedded in another page)
-        // Then we don't need to care about sending the messages anywhere!
-        if (this.frameSource) {
-            this.frameSource.postMessage(
-                typeof data === "string" ? data : JSON.stringify(data),
-                this.frameOrigin);
+        if (this.socket) {
+            this.socket.emit('message', data);
+        } else {
+            // If there is no frameSource (e.g. we're not embedded in another page)
+            // Then we don't need to care about sending the messages anywhere!
+            if (this.frameSource) {
+                this.frameSource.postMessage(
+                        typeof data === "string" ? data : JSON.stringify(data),
+                    this.frameOrigin);
+            }
         }
     },
 
@@ -165,7 +179,7 @@ window.LiveEditorOutput = Backbone.View.extend({
     },
 
     runCode: function(userCode, callback) {
-        
+
         this.currentCode = userCode;
 
         var runDone = function(errors, testResults) {

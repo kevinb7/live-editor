@@ -49,17 +49,17 @@ function program15(depth0,data) {
   
   return "Loading audio...";}
 
-  buffer += "<div class=\"scratchpad-wrap\">\n    <!-- Canvases (Drawing + Output) -->\n    <div class=\"scratchpad-canvas-wrap\">\n        <div id=\"output\">\n            <!-- Extra data-src attribute to work around\n                 cross-origin access policies. -->\n            <iframe id=\"output-frame\"\n                src=\"";
+  buffer += "<div class=\"scratchpad-wrap\">\n    <!-- Canvases (Drawing + Output) -->\n    <div class=\"scratchpad-canvas-wrap\">\n        <div id=\"output\">\n            <!-- Extra data-src attribute to work around\n                 cross-origin access policies. -->\n            <!--<iframe id=\"output-frame\"-->\n                <!--src=\"";
   foundHelper = helpers.execFile;
   stack1 = foundHelper || depth0.execFile;
   if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
   else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "execFile", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "\"\n                data-src=\"";
+  buffer += escapeExpression(stack1) + "\"-->\n                <!--data-src=\"";
   foundHelper = helpers.execFile;
   stack1 = foundHelper || depth0.execFile;
   if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
   else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "execFile", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "\"></iframe>\n            <canvas class=\"scratchpad-draw-canvas\" style=\"display:none;\"\n                width=\"400\" height=\"400\"></canvas>\n\n            <div class=\"overlay disable-overlay\" style=\"display:none;\">\n            </div>\n\n            <div class=\"scratchpad-canvas-loading\">\n                <img src=\"";
+  buffer += escapeExpression(stack1) + "\"></iframe>-->\n            <canvas class=\"scratchpad-draw-canvas\" style=\"display:none;\"\n                width=\"400\" height=\"400\"></canvas>\n\n            <div class=\"overlay disable-overlay\" style=\"display:none;\">\n            </div>\n\n            <div class=\"scratchpad-canvas-loading\">\n                <img src=\"";
   foundHelper = helpers.imagesDir;
   stack1 = foundHelper || depth0.imagesDir;
   if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
