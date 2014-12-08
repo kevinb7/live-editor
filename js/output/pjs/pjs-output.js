@@ -290,11 +290,21 @@ window.PJSOutput = Backbone.View.extend({
 
         geom.processing = this.canvas;
 
+        Object.defineProperty(this.canvas, "viewMatrix", {
+            get: function () { return geom.viewMatrix; },
+            set: function (value) { geom.viewMatrix = value; }
+        });
+
         this.canvas.createTetrahedron = geom.createTetrahedron;
         this.canvas.createCube = geom.createCube;
         this.canvas.createOctahedron = geom.createOctahedron;
         this.canvas.createDodecahedron = geom.createDodecahedron;
         this.canvas.createIcosahedron = geom.createIcosahedron;
+
+        this.canvas.Mesh = geom.Mesh;
+        this.canvas.Edge = geom.Edge;
+        this.canvas.Face = geom.Face;
+        this.canvas.Vector3 = geom.Vector3;
 
         this.canvas.Vector3 = geom.Vector3;
         this.canvas.Matrix4 = geom.Matrix4;
