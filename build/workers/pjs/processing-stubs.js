@@ -13,7 +13,7 @@ function initProcessingStubs() {
         String: this.String
     };
 
-    (function(p, undef) {    
+    (function(p, undef) {
       var nop = function() {};
       var
         curColorMode = 1,
@@ -256,7 +256,7 @@ function initProcessingStubs() {
           }
 
           // Create the static methods of PVector automatically
-          // We don't do toString because it causes a TypeError 
+          // We don't do toString because it causes a TypeError
           //  when attempting to stringify PVector
           for (var method in PVector.prototype) {
               if (PVector.prototype.hasOwnProperty(method) && !PVector.hasOwnProperty(method) &&
@@ -1025,7 +1025,7 @@ function initProcessingStubs() {
       Char.prototype.valueOf = function() {
         return this.code;
       };
-    
+
       p.binary = function(num, numBits) {
         var bit;
         if (numBits > 0) bit = numBits;
@@ -1246,6 +1246,13 @@ function initProcessingStubs() {
       };
       p.millis = function() {
         return Date.now() - start;
+      };
+
+      // stub out 3D functions
+      p.createCube = function(size) {
+        return {
+          draw: function () {}
+        }
       };
     })(context);
 

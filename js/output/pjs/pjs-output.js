@@ -288,6 +288,17 @@ window.PJSOutput = Backbone.View.extend({
             instance.draw = this.DUMMY;
         }.bind(this));
 
+        geom.processing = this.canvas;
+
+        this.canvas.createTetrahedron = geom.createTetrahedron;
+        this.canvas.createCube = geom.createCube;
+        this.canvas.createOctahedron = geom.createOctahedron;
+        this.canvas.createDodecahedron = geom.createDodecahedron;
+        this.canvas.createIcosahedron = geom.createIcosahedron;
+
+        this.canvas.Vector3 = geom.Vector3;
+        this.canvas.Matrix4 = geom.Matrix4;
+
         this.bindProcessing(this.processing, this.canvas);
 
         this.config.runCurVersion("processing", this.canvas);
@@ -322,7 +333,7 @@ window.PJSOutput = Backbone.View.extend({
         var width = $window.width();
         var height = $window.height();
 
-        if (this.canvas && 
+        if (this.canvas &&
             (width !== this.canvas.width ||
             height !== this.canvas.height)) {
             // Set the canvas element to be the right size
@@ -752,7 +763,7 @@ window.PJSOutput = Backbone.View.extend({
             //  they can't serialize.
             var PImage = this.canvas.PImage;
             var isStubbableObject = function(value) {
-                return $.isPlainObject(value) && 
+                return $.isPlainObject(value) &&
                     !(value instanceof PImage);
             };
 
@@ -795,7 +806,7 @@ window.PJSOutput = Backbone.View.extend({
                 }
                 context[global] = contextVal;
             }.bind(this));
-    
+
             this.worker.exec(userCode, context, function(errors, userCode) {
                 if (errors && errors.length > 0) {
                     return callback(errors, userCode);

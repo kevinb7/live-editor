@@ -16,3 +16,6 @@
 [submodule "external/structuredjs"]
 	path = external/structuredjs
 	url = https://github.com/Khan/structuredjs
+[submodule "external/platonic-solids"]
+	path = external/platonic-solids
+	url = https://github.com/kevinb7/platonic-solids

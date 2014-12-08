@@ -68,7 +68,9 @@
             "external/jshint/jshint.js",
             "external/structuredjs/external/esprima.js",
             "external/structuredjs/structured.js",
-            "external/TraceKit/tracekit.js"
+            "external/TraceKit/tracekit.js",
+            "external/platonic-solids/dist/geom.js",
+            "external/platonic-solids/dist/solids.js"
         ],
         "output_pjs": [
             "js/output/pjs/pjs-tester.js",
@@ -132,7 +134,7 @@
     ],
     "styles": {
         "core_deps": [
-            "bower_components/jquery-ui/themes/ui-lightness/jquery-ui.css" 
+            "bower_components/jquery-ui/themes/ui-lightness/jquery-ui.css"
         ],
         "editor_structured_blocks": [
             "external/structured-blocks/css/style.css",
