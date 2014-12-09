@@ -1,3 +1,107 @@
+!function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.Poster=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+var posters = [];
+if (self.document) {
+    self.addEventListener("message", function (e) {
+        var channel = e.data.channel;
+        posters.forEach(function (poster) {
+            if (poster.target === e.source) {
+                var listeners = poster.channels[channel];
+                if (listeners) {
+                    listeners.forEach(function (listener) { return listener.apply(null, e.data.args); });
+                }
+            }
+        });
+    });
+}
+else {
+    self.addEventListener("message", function (e) {
+        var channel = e.data.channel;
+        posters.forEach(function (poster) {
+            var listeners = poster.channels[channel];
+            if (listeners) {
+                listeners.forEach(function (listener) { return listener.apply(null, e.data.args); });
+            }
+        });
+    });
+}
+var Poster = (function () {
+    function Poster(target, origin) {
+        var _this = this;
+        if (origin === void 0) { origin = "*"; }
+        this.origin = origin;
+        this.target = target;
+        this.channels = {};
+        if (self.window && this.target instanceof Worker) {
+            this.target.addEventListener("message", function (e) {
+                var channel = e.data.channel;
+                var listeners = _this.channels[channel];
+                if (listeners) {
+                    listeners.forEach(function (listener) { return listener.apply(null, e.data.args); });
+                }
+            });
+        }
+        posters.push(this);
+    }
+    Poster.prototype.post = function (channel) {
+        var args = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            args[_i - 1] = arguments[_i];
+        }
+        var message = {
+            channel: channel,
+            args: args
+        };
+        if (self.document && !(this.target instanceof Worker)) {
+            this.target.postMessage(message, this.origin);
+        }
+        else {
+            this.target.postMessage(message);
+        }
+    };
+    Poster.prototype.emit = function (channel) {
+        var args = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            args[_i - 1] = arguments[_i];
+        }
+        args.unshift(channel);
+        this.post.apply(this, args);
+    };
+    Poster.prototype.listen = function (channel, callback) {
+        var listeners = this.channels[channel];
+        if (listeners === undefined) {
+            listeners = this.channels[channel] = [];
+        }
+        listeners.push(callback);
+        return this;
+    };
+    Poster.prototype.addListener = function (channel, callback) {
+        return this.listen(channel, callback);
+    };
+    Poster.prototype.on = function (channel, callback) {
+        return this.listen(channel, callback);
+    };
+    Poster.prototype.removeListener = function (channel, callback) {
+        var listeners = this.channels[channel];
+        if (listeners) {
+            var index = listeners.indexOf(callback);
+            if (index !== -1) {
+                listeners.splice(index, 1);
+            }
+        }
+    };
+    Poster.prototype.removeAllListeners = function (channel) {
+        this.channels[channel] = [];
+    };
+    Poster.prototype.listeners = function (channel) {
+        var listeners = this.channels[channel];
+        return listeners || [];
+    };
+    return Poster;
+})();
+module.exports = Poster;
+
+},{}]},{},[1])(1)
+});
 this["Handlebars"] = this["Handlebars"] || {};
 this["Handlebars"]["templates"] = this["Handlebars"]["templates"] || {};
 this["Handlebars"]["templates"]["tipbar"] = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
@@ -215,7 +319,7 @@ function program15(depth0,data) {
   if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
   else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "</button>\n\n            <!-- Widgets for selecting colors to doodle on the canvas during\n                recordings -->\n            <div id=\"draw-widgets\" style=\"display:none;\">\n                <a href=\"\" id=\"draw-clear-button\" class=\"ui-button\">\n                    <span class=\"ui-icon-cancel\"></span>\n                </a>\n                ";
+  buffer += "</button>\n            <br>\n            <br>\n            <b>3D override settings:</b><br>\n            <input type=\"checkbox\" id=\"override\">override<br>\n            <input type=\"checkbox\" id=\"showFaces\" checked>faces<br>\n            <input type=\"checkbox\" id=\"showEdges\" checked>edges<br>\n            <input type=\"checkbox\" id=\"showVertices\" checked>vertices<br>\n            <input type=\"checkbox\" id=\"showLabels\">labels<br>\n            <!-- TOOD: implement \"showBackfaces\" after switching to THREE.js -->\n            <!--<input type=\"checkbox\" id=\"showBackfaces\">backfaces<br>-->\n            <input type=\"checkbox\" id=\"showNormals\">normals<br>\n            <input type=\"checkbox\" id=\"opaque\">opaque<br>\n            <!-- Widgets for selecting colors to doodle on the canvas during\n                recordings -->\n            <div id=\"draw-widgets\" style=\"display:none;\">\n                <a href=\"\" id=\"draw-clear-button\" class=\"ui-button\">\n                    <span class=\"ui-icon-cancel\"></span>\n                </a>\n                ";
   foundHelper = helpers.colors;
   stack1 = foundHelper || depth0.colors;
   stack2 = helpers.each;
@@ -1011,7 +1115,7 @@ window.LiveEditor = Backbone.View.extend({
                         });
                     }
                     self.editor.once("changeCursor", cursorDirty);
-                }, 0);                
+                }, 0);
             }
         };
         this.editor.once("changeCursor", cursorDirty);
@@ -1182,6 +1286,16 @@ window.LiveEditor = Backbone.View.extend({
                 commands: this.recordingCommands
             });
         }
+
+        var iframe = document.querySelector("#output-frame");
+        var poster = new Poster(iframe.contentWindow);
+
+        var settings = ["override", "showFaces", "showEdges", "showVertices", "showLabels", "showNormals", "opaque"];
+        settings.forEach(function (name) {
+            $("#" + name).click(function () {
+                poster.post(name, this.checked);
+            });
+        });
     },
 
     remove: function() {
@@ -1215,7 +1329,7 @@ window.LiveEditor = Backbone.View.extend({
             // Sometimes when Flash is blocked or the browser is slower,
             //  soundManager will fail to initialize at first,
             //  claiming no response from the Flash file.
-            // To handle that, we attempt a reboot 3 seconds after each 
+            // To handle that, we attempt a reboot 3 seconds after each
             //  timeout, clearing the timer if we get an onready during
             //  that time (which happens if user un-blocks flash).
             onready: function() {
@@ -1741,7 +1855,7 @@ window.LiveEditor = Backbone.View.extend({
         if (data.validate != null) {
             this.validation = data.validate;
         }
-        
+
         if (data.results) {
             this.trigger("runDone");
         }
@@ -1755,13 +1869,13 @@ window.LiveEditor = Backbone.View.extend({
             }.bind(this));
 
             var annotations = [];
-            for (var i = 0; i < data.results.assertions.length; i++) { 
+            for (var i = 0; i < data.results.assertions.length; i++) {
                 var unitTest = data.results.assertions[i];
                 annotations.push({
-                    row: unitTest.row, 
-                    column: unitTest.column, 
+                    row: unitTest.row,
+                    column: unitTest.column,
                     text: unitTest.text,
-                    type: "warning" 
+                    type: "warning"
                 });
                 // Underline the problem line to make it more obvious
                 //  if they don't notice the gutter icon
@@ -1824,7 +1938,7 @@ window.LiveEditor = Backbone.View.extend({
      *
      * A note about the throttling:
      * This limits updates to 50FPS. No point in updating faster than that.
-     * 
+     *
      * DO NOT CALL THIS DIRECTLY
      * Instead call markDirty because it will handle
      * throttling requests properly.
@@ -1848,7 +1962,7 @@ window.LiveEditor = Backbone.View.extend({
 
         this.postFrame(options);
     }, 20),
-    
+
     markDirty: function(force) {
         // They're typing. Hide the tipbar to give them a chance to fix things up
         this.tipbar.hide();
@@ -1917,7 +2031,7 @@ window.LiveEditor = Backbone.View.extend({
         // Unbind any handlers this function may have set for previous
         // screenshots
         $(window).off("message.getScreenshot");
-    
+
         // We're only expecting one screenshot back
         $(window).on("message.getScreenshot", function(e) {
             // Only call if the data is actually an image!
@@ -1925,7 +2039,7 @@ window.LiveEditor = Backbone.View.extend({
                 callback(e.originalEvent.data);
             }
         });
-    
+
         // Ask the frame for a screenshot
         this.postFrame({ screenshot: true });
     },

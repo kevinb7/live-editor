@@ -1248,12 +1248,24 @@ function initProcessingStubs() {
         return Date.now() - start;
       };
 
+      p.Mesh = function () {
+        return {
+          faces: [{}],
+          addVertex: function (x,y,z) {},
+          addEdge: function (index1, index2) {},
+          addFace: function () {},
+          draw: function () {}
+        }
+      };
+
       // stub out 3D functions
       p.createCube = function(size) {
         return {
           draw: function () {}
         }
       };
+
+      p.draw = function () {};
     })(context);
 
     return context;

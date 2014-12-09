@@ -24,7 +24,18 @@
                 class="simple-button pull-right">
                 <span class="icon-refresh"></span>
                 {{#_}}Restart{{/_}}</button>
-
+            <br>
+            <br>
+            <b>3D override settings:</b><br>
+            <input type="checkbox" id="override">override<br>
+            <input type="checkbox" id="showFaces" checked>faces<br>
+            <input type="checkbox" id="showEdges" checked>edges<br>
+            <input type="checkbox" id="showVertices" checked>vertices<br>
+            <input type="checkbox" id="showLabels">labels<br>
+            <!-- TOOD: implement "showBackfaces" after switching to THREE.js -->
+            <!--<input type="checkbox" id="showBackfaces">backfaces<br>-->
+            <input type="checkbox" id="showNormals">normals<br>
+            <input type="checkbox" id="opaque">opaque<br>
             <!-- Widgets for selecting colors to doodle on the canvas during
                 recordings -->
             <div id="draw-widgets" style="display:none;">

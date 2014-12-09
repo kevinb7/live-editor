@@ -143,6 +143,11 @@ window.PJSOutput = Backbone.View.extend({
             // The one exception to the rule above is the draw function
             // (which is defined on init but CAN be overridden).
             externalProps.draw = true;
+
+            this.safeCalls.Mesh = true;
+            this.safeCalls.Edge = true;
+            this.safeCalls.Face = true;
+            this.safeCalls.Vector3 = true;
         }
 
         // Load JSHint config options
@@ -288,6 +293,15 @@ window.PJSOutput = Backbone.View.extend({
             instance.draw = this.DUMMY;
         }.bind(this));
 
+        var poster = new Poster(window.parent);
+        var settings = ["override", "showFaces", "showEdges", "showVertices", "showLabels", "showNormals", "opaque"];
+        settings.forEach(function (name) {
+            poster.listen(name, function (value) {
+                console.log("iframe: " + name + " = " + value);
+                geom.Mesh[name] = value;
+            });
+        });
+
         geom.processing = this.canvas;
 
         Object.defineProperty(this.canvas, "viewMatrix", {
@@ -308,6 +322,41 @@ window.PJSOutput = Backbone.View.extend({
 
         this.canvas.Vector3 = geom.Vector3;
         this.canvas.Matrix4 = geom.Matrix4;
+
+        var context = this.canvas;
+        this.canvas.mouseDragged = function () {
+            with (context) {
+                var speed = 0.5;
+                var dx = speed * (mouseX - pmouseX);
+                var dy = speed * (mouseY - pmouseY);
+
+                var axis = new Vector3(dy, dx, 0);
+                var angle = Math.PI * axis.length() / 180;
+
+                if (axis.length() > 0.001) {
+                    axis = axis.normalize();
+                    var rotMatrix = Matrix4.rotation(axis, angle);
+                    viewMatrix = rotMatrix.mul(viewMatrix);
+                    draw();
+                }
+            }
+        };
+
+        //this.canvas.setup = function () {
+        //    with (context) {
+        //        background(255);
+        //        strokeWeight(2);
+        //        translate(200,200);
+        //        scale(1,-1);
+        //    }
+        //};
+
+        this.canvas.draw = function () {
+            with (context) {
+                background(255,255,255);
+                mesh.draw();
+            }
+        };
 
         this.bindProcessing(this.processing, this.canvas);
 
@@ -1164,6 +1213,11 @@ window.PJSOutput = Backbone.View.extend({
 
         // Make sure the matrix is always reset
         this.canvas.resetMatrix();
+
+        this.canvas.background(255);
+        this.canvas.strokeWeight(2);
+        this.canvas.translate(200,200);
+        this.canvas.scale(1,-1);
 
         // Seed the random number generator with the same seed
         this.restoreRandomSeed();

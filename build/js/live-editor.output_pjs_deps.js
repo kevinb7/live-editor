@@ -35978,6 +35978,12 @@ var geom;
     function dot4(a, b) {
         return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
     }
+    function randomColor() {
+        var r = geom.processing.random(255);
+        var g = geom.processing.random(255);
+        var b = geom.processing.random(255);
+        return geom.processing.color(r, g, b);
+    }
     var Matrix4 = (function () {
         function Matrix4() {
             this.values = [
@@ -36154,31 +36160,28 @@ var geom;
         Vector3.prototype.draw = function (opaque) {
             if (opaque === void 0) { opaque = true; }
             var p = geom.viewMatrix.mulVec(this);
-            if (this.faces.length > 0) {
-                if (!opaque || this.faces.some(function (face) { return face.normal().z > 0; })) {
-                    geom.processing.noStroke();
-                    geom.processing.fill(0, 0, 0);
-                    geom.processing.ellipse(p.x, p.y, 8, 8);
-                }
+            var shouldDraw = true;
+            // TODO: improve this check, need to determine if all faces incident to the vertex form a loop/cycle
+            if (opaque && this.faces.filter(function (face) { return face.normal().z < 0; }).length >= 3) {
+                shouldDraw = false;
             }
-            else {
+            if (shouldDraw) {
                 geom.processing.noStroke();
                 geom.processing.fill(0, 0, 0);
                 geom.processing.ellipse(p.x, p.y, 8, 8);
             }
         };
-        Vector3.prototype.drawLabel = function (label) {
+        Vector3.prototype.drawLabel = function (label, opaque) {
+            if (opaque === void 0) { opaque = true; }
             var p = geom.viewMatrix.mulVec(this);
-            if (this.faces.length > 0) {
-                if (this.faces.some(function (face) { return face.normal().z > 0; })) {
-                    geom.processing.pushMatrix();
-                    geom.processing.scale(1, -1);
-                    geom.processing.fill(0, 0, 0);
-                    geom.processing.text(label, p.x + 10, -p.y);
-                    geom.processing.popMatrix();
-                }
-            }
-            else {
+            var shouldDraw = true;
+            // TODO: improve this check, need to determine if all faces incident to the vertex form a loop/cycle
+            //var bfCount = this.faces.filter(face => face.normal().z < 0).length;
+            //var ffCount = this.faces.length - bfCount;
+            //if (opaque && ffCount === 0 && this.faces.length !== 0) {
+            //    shouldDraw = false;
+            //}
+            if (shouldDraw) {
                 geom.processing.pushMatrix();
                 geom.processing.scale(1, -1);
                 geom.processing.fill(0, 0, 0);
@@ -36193,35 +36196,36 @@ var geom;
         function Edge(vertices, indices) {
             this.vertices = vertices;
             this.indices = indices;
+            this.faces = [];
         }
         Edge.prototype.draw = function (opaque) {
             if (opaque === void 0) { opaque = true; }
             if (this.faces.length === 2) {
                 var n1 = this.faces[0].normal();
                 var n2 = this.faces[1].normal();
+                if (n1.z > 0 || n2.z > 0) {
+                    var p1 = geom.viewMatrix.mulVec(this.vertices[this.indices[0]]);
+                    var p2 = geom.viewMatrix.mulVec(this.vertices[this.indices[1]]);
+                    geom.processing.stroke(0, 0, 0);
+                    geom.processing.line(p1.x, p1.y, p2.x, p2.y);
+                }
+                if (!opaque && n1.z <= 0 && n2.z <= 0) {
+                    var p1 = geom.viewMatrix.mulVec(this.vertices[this.indices[0]]);
+                    var p2 = geom.viewMatrix.mulVec(this.vertices[this.indices[1]]);
+                    geom.processing.stroke(0, 0, 0);
+                    geom.processing.dashedLine(p1.x, p1.y, p2.x, p2.y, 10);
+                }
             }
-            if (n1.z > 0 || n2.z > 0) {
+            else {
                 var p1 = geom.viewMatrix.mulVec(this.vertices[this.indices[0]]);
                 var p2 = geom.viewMatrix.mulVec(this.vertices[this.indices[1]]);
                 geom.processing.stroke(0, 0, 0);
                 geom.processing.line(p1.x, p1.y, p2.x, p2.y);
             }
-            if (!opaque && n1.z <= 0 && n2.z <= 0) {
-                var p1 = geom.viewMatrix.mulVec(this.vertices[this.indices[0]]);
-                var p2 = geom.viewMatrix.mulVec(this.vertices[this.indices[1]]);
-                geom.processing.stroke(0, 0, 0);
-                geom.processing.dashedLine(p1.x, p1.y, p2.x, p2.y, 10);
-            }
         };
         return Edge;
     })();
     geom.Edge = Edge;
-    function randomColor() {
-        var r = geom.processing.random(255);
-        var g = geom.processing.random(255);
-        var b = geom.processing.random(255);
-        return geom.processing.color(r, g, b);
-    }
     var Face = (function () {
         function Face(vertices, indices) {
             this.vertices = vertices;
@@ -36244,20 +36248,28 @@ var geom;
             var sum = this.indices.reduce(function (accum, index) { return accum.add(_this.vertices[index]); }, new Vector3());
             return sum.div(this.indices.length);
         };
-        Face.prototype.draw = function (opaque) {
+        // TODO: default showBackfaces to true after migrating to WebGL
+        Face.prototype.draw = function (opaque, showBackfaces) {
             var _this = this;
             if (opaque === void 0) { opaque = true; }
+            if (showBackfaces === void 0) { showBackfaces = false; }
             if (opaque) {
-                geom.processing.fill(this.color);
                 if (this.normal().z > 0) {
-                    geom.processing.noStroke();
-                    geom.processing.beginShape();
-                    this.indices.forEach(function (index) {
-                        var vertex = geom.viewMatrix.mulVec(_this.vertices[index]);
-                        geom.processing.vertex(vertex.x, vertex.y, 0.0);
-                    });
-                    geom.processing.endShape();
+                    geom.processing.fill(this.color);
                 }
+                else {
+                    if (!showBackfaces) {
+                        return;
+                    }
+                    geom.processing.fill(64, 64, 64); // backface color?
+                }
+                geom.processing.noStroke();
+                geom.processing.beginShape();
+                this.indices.forEach(function (index) {
+                    var vertex = geom.viewMatrix.mulVec(_this.vertices[index]);
+                    geom.processing.vertex(vertex.x, vertex.y, 0.0);
+                });
+                geom.processing.endShape();
             }
             else {
                 geom.processing.fill(128, 128, 128, 128);
@@ -36306,6 +36318,7 @@ var geom;
             this.showFaces = true;
             this.showLabels = false;
             this.showNormals = false;
+            this.showBackfaces = false;
             this.opaque = true;
         }
         Mesh.prototype.addVertex = function (x, y, z) {
@@ -36323,6 +36336,13 @@ var geom;
             var face = new Face(this.vertices, indices);
             indices.forEach(function (index) { return _this.vertices[index].faces.push(face); });
             this.faces.push(face);
+            this.edges.forEach(function (edge) {
+                if (_.intersection(edge.indices, face.indices).length === 2) {
+                    if (edge.faces.indexOf(face) === -1) {
+                        edge.faces.push(face);
+                    }
+                }
+            });
         };
         Mesh.prototype.generateEdges = function () {
             var len = this.faces.length;
@@ -36355,25 +36375,39 @@ var geom;
             return this;
         };
         Mesh.prototype.draw = function () {
-            var _this = this;
-            if (this.showFaces) {
-                this.faces.forEach(function (face) { return face.draw(_this.opaque); });
+            var showFaces = Mesh.override ? Mesh.showFaces : this.showFaces;
+            var showEdges = Mesh.override ? Mesh.showEdges : this.showEdges;
+            var showVertices = Mesh.override ? Mesh.showVertices : this.showVertices;
+            var showLabels = Mesh.override ? Mesh.showLabels : this.showLabels;
+            var showNormals = Mesh.override ? Mesh.showNormals : this.showNormals;
+            var showBackfaces = Mesh.override ? Mesh.showBackfaces : this.showBackfaces;
+            var opaque = Mesh.override ? Mesh.opaque : this.opaque;
+            if (showFaces) {
+                this.faces.forEach(function (face) { return face.draw(opaque, showBackfaces); });
             }
-            if (this.showEdges) {
-                this.edges.forEach(function (edge) { return edge.draw(_this.opaque); });
+            if (showEdges) {
+                this.edges.forEach(function (edge) { return edge.draw(opaque); });
             }
-            if (this.showVertices) {
-                this.vertices.forEach(function (vertex) { return vertex.draw(_this.opaque); });
+            if (showVertices) {
+                this.vertices.forEach(function (vertex) { return vertex.draw(opaque); });
             }
-            if (this.showLabels) {
+            if (showLabels) {
                 geom.processing.textSize(18);
                 geom.processing.textAlign(geom.processing.LEFT, geom.processing.CENTER);
-                this.vertices.forEach(function (vertex, index) { return vertex.drawLabel("" + index); });
+                this.vertices.forEach(function (vertex, index) { return vertex.drawLabel("" + index, opaque); });
             }
-            if (this.showNormals) {
-                this.faces.forEach(function (face) { return face.drawNormal(_this.opaque); });
+            if (showNormals) {
+                this.faces.forEach(function (face) { return face.drawNormal(opaque); });
             }
         };
+        Mesh.override = false;
+        Mesh.showVertices = true;
+        Mesh.showEdges = true;
+        Mesh.showFaces = true;
+        Mesh.showLabels = false;
+        Mesh.showNormals = false;
+        Mesh.showBackfaces = false; // TODO: turn this on after migrating to WebGL
+        Mesh.opaque = true;
         return Mesh;
     })();
     geom.Mesh = Mesh;
@@ -36525,3 +36559,108 @@ var geom;
     }
     geom.createIcosahedron = createIcosahedron;
 })(geom || (geom = {}));
+
+!function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.Poster=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+var posters = [];
+if (self.document) {
+    self.addEventListener("message", function (e) {
+        var channel = e.data.channel;
+        posters.forEach(function (poster) {
+            if (poster.target === e.source) {
+                var listeners = poster.channels[channel];
+                if (listeners) {
+                    listeners.forEach(function (listener) { return listener.apply(null, e.data.args); });
+                }
+            }
+        });
+    });
+}
+else {
+    self.addEventListener("message", function (e) {
+        var channel = e.data.channel;
+        posters.forEach(function (poster) {
+            var listeners = poster.channels[channel];
+            if (listeners) {
+                listeners.forEach(function (listener) { return listener.apply(null, e.data.args); });
+            }
+        });
+    });
+}
+var Poster = (function () {
+    function Poster(target, origin) {
+        var _this = this;
+        if (origin === void 0) { origin = "*"; }
+        this.origin = origin;
+        this.target = target;
+        this.channels = {};
+        if (self.window && this.target instanceof Worker) {
+            this.target.addEventListener("message", function (e) {
+                var channel = e.data.channel;
+                var listeners = _this.channels[channel];
+                if (listeners) {
+                    listeners.forEach(function (listener) { return listener.apply(null, e.data.args); });
+                }
+            });
+        }
+        posters.push(this);
+    }
+    Poster.prototype.post = function (channel) {
+        var args = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            args[_i - 1] = arguments[_i];
+        }
+        var message = {
+            channel: channel,
+            args: args
+        };
+        if (self.document && !(this.target instanceof Worker)) {
+            this.target.postMessage(message, this.origin);
+        }
+        else {
+            this.target.postMessage(message);
+        }
+    };
+    Poster.prototype.emit = function (channel) {
+        var args = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            args[_i - 1] = arguments[_i];
+        }
+        args.unshift(channel);
+        this.post.apply(this, args);
+    };
+    Poster.prototype.listen = function (channel, callback) {
+        var listeners = this.channels[channel];
+        if (listeners === undefined) {
+            listeners = this.channels[channel] = [];
+        }
+        listeners.push(callback);
+        return this;
+    };
+    Poster.prototype.addListener = function (channel, callback) {
+        return this.listen(channel, callback);
+    };
+    Poster.prototype.on = function (channel, callback) {
+        return this.listen(channel, callback);
+    };
+    Poster.prototype.removeListener = function (channel, callback) {
+        var listeners = this.channels[channel];
+        if (listeners) {
+            var index = listeners.indexOf(callback);
+            if (index !== -1) {
+                listeners.splice(index, 1);
+            }
+        }
+    };
+    Poster.prototype.removeAllListeners = function (channel) {
+        this.channels[channel] = [];
+    };
+    Poster.prototype.listeners = function (channel) {
+        var listeners = this.channels[channel];
+        return listeners || [];
+    };
+    return Poster;
+})();
+module.exports = Poster;
+
+},{}]},{},[1])(1)
+});
