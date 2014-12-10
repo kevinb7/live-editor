@@ -324,6 +324,12 @@ window.PJSOutput = Backbone.View.extend({
         this.canvas.Matrix4 = geom.Matrix4;
 
         var context = this.canvas;
+
+        // implement our own mouseDragged and draw methods
+        // so that users don't have to
+        // eventually use these predefined methods only
+        // when debug mode is active
+
         this.canvas.mouseDragged = function () {
             with (context) {
                 var speed = 0.5;
@@ -342,21 +348,16 @@ window.PJSOutput = Backbone.View.extend({
             }
         };
 
-        //this.canvas.setup = function () {
-        //    with (context) {
-        //        background(255);
-        //        strokeWeight(2);
-        //        translate(200,200);
-        //        scale(1,-1);
-        //    }
-        //};
-
         this.canvas.draw = function () {
             with (context) {
                 background(255,255,255);
-                mesh.draw();
+                if (mesh) {
+                    mesh.draw();
+                }
             }
         };
+
+        iframeOverlay.createRelay(canvas);
 
         this.bindProcessing(this.processing, this.canvas);
 

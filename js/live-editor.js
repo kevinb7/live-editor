@@ -377,6 +377,11 @@ window.LiveEditor = Backbone.View.extend({
         }
 
         var iframe = document.querySelector("#output-frame");
+
+        // have to create the overlay first because it reparents
+        // the iframe which resets the event listeners
+        iframeOverlay.createOverlay(iframe);
+
         var poster = new Poster(iframe.contentWindow);
 
         var settings = ["override", "showFaces", "showEdges", "showVertices", "showLabels", "showNormals", "opaque"];

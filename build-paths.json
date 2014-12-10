@@ -71,7 +71,8 @@
             "external/TraceKit/tracekit.js",
             "external/platonic-solids/dist/geom.js",
             "external/platonic-solids/dist/solids.js",
-            "node_modules/poster/dist/poster.js"
+            "node_modules/poster/dist/poster.js",
+            "node_modules/iframe-overlay/dist/iframe-overlay.js"
         ],
         "output_pjs": [
             "js/output/pjs/pjs-tester.js",
@@ -103,6 +104,7 @@
         ],
         "ui": [
             "node_modules/poster/dist/poster.js",
+            "node_modules/iframe-overlay/dist/iframe-overlay.js",
             "build/tmpl/tipbar.js",
             "js/ui/tipbar.js",
             "build/tmpl/live-editor.js",
