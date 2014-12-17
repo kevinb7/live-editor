@@ -1174,6 +1174,13 @@ window.PJSOutput = Backbone.View.extend({
         "mouseOut", "touchStart", "touchEnd", "touchMove", "touchCancel",
         "keyPressed", "keyReleased", "keyTyped"],
 
+    // Some PJS methods don't work well within a worker.
+    // createGraphics: Creates a whole new Processing object and our stubbing
+    //                 code doesn't play well with it.
+    //                 TODO(bbondy): We may be able to fix this if we have
+    //                 time to debug more while still using the worker.
+    workerBreakingMethods: ["createGraphics"],
+
     // During live coding all of the following state must be reset
     // when it's no longer used.
     liveReset: {
@@ -1195,6 +1202,15 @@ window.PJSOutput = Backbone.View.extend({
         textSize: [12]
     },
 
+    /**
+     * PJS calls which are known to produce no side effects when
+     * called multiple times.
+     * It's a good idea to add things here for functions that have
+     * return values, but still call other PJS functions. In that
+     * exact case, we detect that the function is not safe, but it
+     * should indeed be safe.  So add it here! :)
+     */
+    idempotentCalls: [ "createFont" ],
     initialize: function(options) {
         // Handle recording playback
         this.handlers = {};
@@ -1209,9 +1225,17 @@ window.PJSOutput = Backbone.View.extend({
         this.render();
         this.bind();
 
+        iframeOverlay.createRelay(this.$canvas[0]);
+
         this.build(this.$canvas[0]);
-        if (options.useStepper && Stepper.isBrowserSupported()) {
-            this.stepper = new Stepper(this.canvas);
+
+        if (location.search.indexOf("debugger=true") !== -1 &&
+            ProcessingDebugger.isBrowserSupported()) {
+
+            this.debugger = new ProcessingDebugger(this.canvas);
+            this.debugger.breakpointsEnabled = false;
+            this.debugger.onNewObject = PJSOutput.newCallback.bind(PJSOutput);
+            this.canvas.usingDebugger = true;
         }
 
         this.reseedRandom();
@@ -1270,7 +1294,9 @@ window.PJSOutput = Backbone.View.extend({
                             //          objects.
                             //    If all three of these are the case assume then
                             //    assume that there are no side effects.
-                            if (/native code/.test(strValue) ||
+                            if (this.idempotentCalls
+                                    .indexOf(processingProp) !== -1 ||
+                                /native code/.test(strValue) ||
                                 /return /.test(strValue) &&
                                 !/p\./.test(strValue) &&
                                 !/new P/.test(strValue)) {
@@ -1549,7 +1575,7 @@ window.PJSOutput = Backbone.View.extend({
         // Go through all the images and begin loading them
         _.each(images, function(file) {
             // Get the actual file name
-            var fileMatch = /"([A-Za-z0-9_\/-]*?)"/.exec(file);
+            var fileMatch = /["']([A-Za-z0-9_\/-]*?)["']/.exec(file);
 
             // Skip if the image has already been cached
             // Or if the getImage call is malformed somehow
@@ -1874,7 +1900,14 @@ window.PJSOutput = Backbone.View.extend({
 
     runCode: function(userCode, callback) {
         var runCode = function() {
-            if (!window.Worker) {
+
+            // Check for any reason not to use a worker
+            var doNotUserWorker = _(this.workerBreakingMethods)
+                .some(function(w) {
+                    return userCode.indexOf(w) !== -1;
+            });
+
+            if (!window.Worker || doNotUserWorker) {
                 return this.injectCode(userCode, callback);
             }
 
@@ -1889,7 +1922,7 @@ window.PJSOutput = Backbone.View.extend({
             //  they can't serialize.
             var PImage = this.canvas.PImage;
             var isStubbableObject = function(value) {
-                return $.isPlainObject(value) &&
+                return $.isPlainObject(value) && 
                     !(value instanceof PImage);
             };
 
@@ -1932,7 +1965,7 @@ window.PJSOutput = Backbone.View.extend({
                 }
                 context[global] = contextVal;
             }.bind(this));
-
+    
             this.worker.exec(userCode, context, function(errors, userCode) {
                 if (errors && errors.length > 0) {
                     return callback(errors, userCode);
@@ -2061,9 +2094,14 @@ window.PJSOutput = Backbone.View.extend({
         // Replace all calls to 'new Something' with
         // this.newInstance(Something)()
         // Used for keeping track of unique instances
-        userCode = userCode && userCode.replace(
-            /\bnew[\s\n]+([A-Z]{1,2}[a-z0-9_]+)([\s\n]*\()/g,
-            "PJSOutput.applyInstance($1,'$1')$2");
+        if (!this.debugger) {
+            userCode = userCode && userCode.replace(
+                /\bnew[\s\n]+([A-Z]{1,2}[a-z0-9_]+)([\s\n]*\()/g,
+                "PJSOutput.applyInstance($1,'$1')$2");
+        } else {
+            // we'll use the debugger's newCallback delegate method to
+            // keep track of object instances
+        }
 
         // If we have a draw function then we need to do injection
         // If we had a draw function then we still need to do injection
@@ -2135,8 +2173,24 @@ window.PJSOutput = Backbone.View.extend({
             for (var i = 0; i < fnCalls.length; i++) {
                 // Reconstruction the function call
                 var args = Array.prototype.slice.call(fnCalls[i][1]);
-                inject += fnCalls[i][0] + "(" +
-                    PJSOutput.stringifyArray(args) + ");\n";
+
+
+                var results = [];
+                _(args).each(function(arg, argIndex) {
+                    // Parameters here can come in the form of objects.
+                    // For any object parameter, we don't want to serialize it
+                    // because we'd lose the whole prototype chain.
+                    // Instead we create temporary variables for each.
+                    if (!_.isArray(arg) && _.isObject(arg)) {
+                        var varName = "__obj__" +
+                            fnCalls[i][0] + "__" + argIndex;
+                        this.canvas[varName] = arg;
+                        results.push(varName);
+                    } else {
+                        results.push(PJSOutput.stringify(arg));
+                    }
+                }.bind(this));
+                inject += fnCalls[i][0] + "(" + results.join(", ") + ");\n";
             }
 
             // We also look for newly-changed global variables to inject
@@ -2180,7 +2234,25 @@ window.PJSOutput = Backbone.View.extend({
                         // Otherwise it's ok to inject it directly into the
                         // new environment
                         } else {
-                            this.canvas[prop] = val;
+                            // If we have an object, then copy over all of the
+                            // properties so we don't accidentally destroy
+                            // function scope from `with()` and closures on the
+                            // object prototypes.
+                            // TODO(bbondy): This may copy over things that
+                            // were deleted. If we ever run into a problematic
+                            // program, we may want to add support here.
+                            if (!_.isArray(val) && _.isObject(val) &&
+                                    !_.isArray(this.canvas[prop]) &&
+                                    _.isObject(this.canvas[prop])) {
+                                // Copy over all of the properties
+                                for (var p in val) {
+                                    if (val.hasOwnProperty(p)) {
+                                        this.canvas[prop][p] = val[p];
+                                    }
+                                }
+                            } else {
+                                this.canvas[prop] = val;
+                            }
                         }
                     }
 
@@ -2459,10 +2531,9 @@ window.PJSOutput = Backbone.View.extend({
 
         try {
 
-            // TODO: update this to use the stepper only when debugging
-            if (this.stepper) {
-                this.stepper.load(originalCode);
-                this.stepper.run();
+            if (this.debugger) {
+                this.debugger.load(originalCode);
+                this.debugger.start();
             } else {
                 (new Function(code)).apply(this.canvas, contexts);
             }
@@ -2639,12 +2710,6 @@ _.extend(PJSOutput, {
             }
         } catch(e) {}
 
-        // Make sure a name is set for the class if one has not been
-        // set already
-        if (!classFn.__name && className) {
-            classFn.__name = className;
-        }
-
         // Return a function for later execution.
         return function() {
             var args = arguments;
@@ -2660,23 +2725,37 @@ _.extend(PJSOutput, {
             // Instantiate the dummy function
             var obj = new Class();
 
-            // Point back to the original function
-            obj.constructor = classFn;
-
-            // Generate a semi-unique ID for the instance
-            obj.__id = function() {
-                return "new " + classFn.__name + "(" +
-                    this.stringifyArray(args) + ")";
-            }.bind(this);
-
-            // Keep track of the instances that have been instantiated
-            if (this.instances) {
-                this.instances.push(obj);
-            }
+            this.newCallback(classFn, className, obj, args);
 
             // Return the new instance
             return obj;
         }.bind(this);
+    },
+
+    // called whenever a user defined class is called to instantiate an object.
+    // adds metadata to the class and the object to keep track of it and to
+    // serialize it.
+    // Called in PJSOutput.applyInstance and the Debugger's context.__instantiate__
+    newCallback: function (classFn, className, obj, args) {
+        // Make sure a name is set for the class if one has not been
+        // set already
+        if (!classFn.__name && className) {
+            classFn.__name = className;
+        }
+
+        // Point back to the original function
+        obj.constructor = classFn;
+
+        // Generate a semi-unique ID for the instance
+        obj.__id = function() {
+            return "new " + classFn.__name + "(" +
+                this.stringifyArray(args) + ")";
+        }.bind(this);
+
+        // Keep track of the instances that have been instantiated
+        if (this.instances) {
+            this.instances.push(obj);
+        }
     }
 });
 

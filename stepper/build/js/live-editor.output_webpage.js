@@ -28,7 +28,7 @@ WebpageTester.prototype.testMethods = {
      * explicitly state the parameters in a separate list
      */
     constraint: function(callback) {
-        var paramText = /^function [^\(]*\(([^\)]*)\)/.exec(callback.toString())[1];
+        var paramText = /^function\s*[^\(]*\(([^\)]*)\)/.exec(callback.toString())[1];
         var params = paramText.match(/[$_a-zA-z0-9]+/g);
 
         for (key in params) {
@@ -142,7 +142,7 @@ WebpageTester.prototype.testMethods = {
 
         var css = this.testContext.getCssMap();
         var cssRules = pattern.split("}").slice(0, -1);
-        if (typeof callbacks === "function") {
+        if (!_.isArray(callbacks) && !_.isUndefined(callbacks)) {
             callbacks = [callbacks];
         }
         callbacks = _.map(callbacks, function(cb) {
@@ -376,7 +376,7 @@ WebpageTester.prototype.testMethods = {
         this.testContext.assert(result.success, description, "", {
             // We can accept string hints here because
             //  we never match against them anyway
-            structure: this.testContext.cleanStructure(hint),
+            structure: hint,
             alternateMessage: alternateMessage,
             alsoMessage: alsoMessage,
             image: image
@@ -384,14 +384,42 @@ WebpageTester.prototype.testMethods = {
     },
 
     notDefaultColor: constraintPartial(function(color) {
-        return color !== "rgb(255, 0, 0)";
+        var isRGB = ( /rgb\((\s*\d+,){2}(\s*\d+\s*)\)/.test(color) ||
+                      /rgba\((\s*\d+,){3}(\s*\d+\s*)\)/.test(color) );
+        var isDefault = color.replace(/\s+/, "") === "rgb(255,0,0)";
+        return isRGB && !isDefault;
+    }),
+
+    isValidColor:  constraintPartial(function(color) {
+        var isValidNum = function(val) {
+            var num = parseInt(val, 10);
+            return num >= 0 && num <= 255;
+        };
+        var isRGB = ( /rgb\((\s*\d+,){2}(\s*\d+\s*)\)/.test(color) ||
+                      /rgba\((\s*\d+,){3}(\s*\d+\s*)\)/.test(color) );
+        if (isRGB) {
+            var vals = color.split("(")[1].split(",");
+            return (isValidNum(vals[0]) &&
+                    isValidNum(vals[1]) &&
+                    isValidNum(vals[2]));
+        }
+
+        // If they're trying to use a color name, it should be at least 
+        //  three letters long and not equal to rgb
+        return color.length >= 3 && color.indexOf("rgb") === -1;
     })
 };
 window.WebpageOutput = Backbone.View.extend({
+    messageHandlers: {},
+
     initialize: function(options) {
         this.config = options.config;
         this.output = options.output;
         this.externalsDir = options.externalsDir;
+
+        this.messageHandlers.setCursor = function(data) {
+            this.setCursor(data.setCursor);
+        }.bind(this);
 
         this.tester = new WebpageTester(options);
 
@@ -438,14 +466,24 @@ window.WebpageOutput = Backbone.View.extend({
         userCode = userCode || "";
 
         // Lint the user's code, returning any errors in the callback
-        var results = Slowparse.HTML(this.getDocument(), userCode, {
-            disallowActiveAttributes: true,
-            noScript: true,
-            disableTags: ["audio", "video", "iframe", "embed", "object"]
-        });
+        var results = {};
+        try {
+            results = Slowparse.HTML(this.getDocument(), userCode, {
+                disallowActiveAttributes: true,
+                noScript: true,
+                disableTags: ["audio", "video", "iframe", "embed", "object"]
+            });
+        } catch (e) {
+            if (window.console) {
+                console.warn(e);
+            }
+            results.error = {
+                type: "UNKNOWN_SLOWPARSE_ERROR"
+            };
+        }
 
         if (results.error) {
-            var pos = results.error.cursor;
+            var pos = results.error.cursor || 0;
             var previous = userCode.slice(0, pos);
             var column = pos - previous.lastIndexOf("\n") - 1;
             var row = (previous.match(/\n/g) || []).length;
@@ -492,39 +530,40 @@ window.WebpageOutput = Backbone.View.extend({
         // https://github.com/mozilla/thimble.webmaker.org/blob/master/locale/en_US/thimble-dialog-messages.json
         return ({
             ATTRIBUTE_IN_CLOSING_TAG: $._("A closing \"&lt;/%(closeTag_name)s&gt;\" tag cannot contain any attributes.", error),
-            CLOSE_TAG_FOR_VOID_ELEMENT: $._("A closing \"&lt;/%(closeTag_name)s&gt;\" tag is for a void element (that is, an element that doesn't need to be closed).", error),
-            CSS_MIXED_ACTIVECONTENT: $._("A css property \"%(cssProperty_property)s\" has a \"url()\" value that currently points to an insecure resource.", error),
+            CLOSE_TAG_FOR_VOID_ELEMENT: $._("You have a closing \"&lt;/%(closeTag_name)s&gt;\" tag for a void element (and void elements don't need to be closed).", error),
+            CSS_MIXED_ACTIVECONTENT: $._("You have a css property \"%(cssProperty_property)s\" with a \"url()\" value that currently points to an insecure resource.", error),
             EVENT_HANDLER_ATTR_NOT_ALLOWED: $._("Sorry, but security restrictions on this site prevent you from using the \"%(attribute_name_value)s\" JavaScript event handler attribute.", error),
-            HTML_CODE_IN_CSS_BLOCK: $._("HTML code was detected in a CSS context.", error),
+            HTML_CODE_IN_CSS_BLOCK: $._("Did you put HTML code inside a CSS area?", error),
             HTTP_LINK_FROM_HTTPS_PAGE: $._("The \"&lt;%(openTag_name)s&gt;\" tag's \"%(attribute_name_value)s\" attribute currently points to an insecure resource.", error),
-            INVALID_ATTR_NAME: $._("The attribute name \"%(attribute_name_value)s\" that is not permitted under HTML5 naming conventions.", error),
+            INVALID_ATTR_NAME: $._("The attribute name \"%(attribute_name_value)s\" is not permitted under HTML5 naming conventions.", error),
             UNSUPPORTED_ATTR_NAMESPACE: $._("The attribute \"%(attribute_name_value)s\" uses an attribute namespace that is not permitted under HTML5 conventions.", error),
             MULTIPLE_ATTR_NAMESPACES: $._("The attribute \"%(attribute_name_value)s\" has multiple namespaces. Check your text and make sure there's only a single namespace prefix for the attribute.", error),
-            INVALID_CSS_PROPERTY_NAME: $._("CSS property \"%(cssProperty_property)s\" does not exist.", error),
-            INVALID_TAG_NAME: $._("A \"&lt;\" character appears to be the beginning of a tag, but is not followed by a valid tag name. If you just want a \"&lt;\" to appear on your Web page, try using \"&amp;amp;lt;\" instead.", error),
+            INVALID_CSS_PROPERTY_NAME: $._("The CSS property \"%(cssProperty_property)s\" does not exist.", error),
+            INVALID_TAG_NAME: $._("A \"&lt;\" character appears to be the beginning of a tag, but is not followed by a valid tag name. If you want a \"&lt;\" to appear on your Web page, try using \"&amp;lt;\" instead. Otherwise, check your spelling.", error),
             JAVASCRIPT_URL_NOT_ALLOWED: $._("Sorry, but security restrictions on this site prevent you from using the \"javascript:\" URL.", error),
-            MISMATCHED_CLOSE_TAG: $._("A closing \"&lt;/%(closeTag_name)s&gt;\" tag doesn't pair with the opening \"&lt;%(openTag_name)s&gt;\" tag. This is likely due to a missing \"&lt;/%(openTag_name)s&gt;\" tag.", error),
-            MISSING_CSS_BLOCK_CLOSER: $._("Missing block closer or next \"property:value;\" pair following \"%(cssValue_value)s\".", error),
-            MISSING_CSS_BLOCK_OPENER: $._("Missing block opener after \"%(cssSelector_selector)s\".", error),
-            MISSING_CSS_PROPERTY: $._("Missing property for \"%(cssSelector_selector)s\".", error),
-            MISSING_CSS_SELECTOR: $._("Missing either a new CSS selector or the \"&lt;/style&gt;\" tag.", error),
-            MISSING_CSS_VALUE: $._("Missing value for \"%(cssProperty_property)s\".", error),
+            MISMATCHED_CLOSE_TAG: $._("You have a closing \"&lt;/%(closeTag_name)s&gt;\" tag that doesn't pair with the opening \"&lt;%(openTag_name)s&gt;\" tag. This is likely due to a missing or misordered \"&lt;/%(openTag_name)s&gt;\" tag.", error),
+            MISSING_CSS_BLOCK_CLOSER: $._("You're missing either a \"}\" or another \"property:value;\" pair following \"%(cssValue_value)s\".", error),
+            MISSING_CSS_BLOCK_OPENER: $._("You're missing the \"{\" after \"%(cssSelector_selector)s\".", error),
+            MISSING_CSS_PROPERTY: $._("You're missing property for \"%(cssSelector_selector)s\".", error),
+            MISSING_CSS_SELECTOR: $._("You're missing either a new CSS selector or the \"&lt;/style&gt;\" tag.", error),
+            MISSING_CSS_VALUE: $._("You're missing value for \"%(cssProperty_property)s\".", error),
             SCRIPT_ELEMENT_NOT_ALLOWED: $._("Sorry, but security restrictions on this site prevent you from using \"&lt;script&gt;\" tags.", error),
             ELEMENT_NOT_ALLOWED: $._("Sorry, but security restrictions on this site prevent you from using \"&lt;%(openTag_name)s&gt;\" tags.", error),
-            SELF_CLOSING_NON_VOID_ELEMENT: $._("A \"&lt;%(name)s&gt;\" tag can't be self-closed, because \"&lt;%(name)s&gt;\" is not a void element; it must be closed with a separate \"&lt;/%(name)s&gt;\" tag.", error),
+            SELF_CLOSING_NON_VOID_ELEMENT: $._("The \"&lt;%(name)s&gt;\" tag can't be self-closed, because \"&lt;%(name)s&gt;\" is not a void element; it must be closed with a separate \"&lt;/%(name)s&gt;\" tag.", error),
             UNCAUGHT_CSS_PARSE_ERROR: $._("A parse error occurred outside expected cases: \"%(error_msg)s\"", error),
-            UNCLOSED_TAG: $._("A \"&lt;%(openTag_name)s&gt;\" tag never closes.", error),
-            UNEXPECTED_CLOSE_TAG: $._("A closing \"&lt;/%(closeTag_name)s&gt;\" tag doesn't pair with anything, because there are no opening tags that need to be closed.", error),
-            UNFINISHED_CSS_PROPERTY: $._("Property \"%(cssProperty_property)s\" still needs finalizing with \":\"", error),
-            UNFINISHED_CSS_SELECTOR: $._("Selector \"%(cssSelector_selector)s\" still needs finalizing with \"{\"", error),
-            UNFINISHED_CSS_VALUE: $._("Value \"%(cssValue_value)s\" still needs finalizing with \";\"", error),
-            UNKOWN_CSS_KEYWORD: $._("A CSS @keyword \"%(cssKeyword_value)s\" does not match any known @keywords.", error),
-            UNQUOTED_ATTR_VALUE: $._("An Attribute value should start with an opening double quote.", error),
-            UNTERMINATED_ATTR_VALUE: $._("A \"&lt;%(openTag_name)s&gt;\" tag's \"%(attribute_name_value)s\" attribute has a value that doesn't end with a closing double quote.", error),
-            UNTERMINATED_CLOSE_TAG: $._("A closing \"&lt;/%(closeTag_name)s&gt;\" tag doesn't end with a \"&gt;\".", error),
-            UNTERMINATED_COMMENT: $._("A comment doesn't end with a \"--&gt;\".", error),
-            UNTERMINATED_CSS_COMMENT: $._("A CSS comment doesn't end with a \"*/\".", error),
-            UNTERMINATED_OPEN_TAG: $._("An opening \"&lt;%(openTag_name)s&gt;\" tag doesn't end with a \"&gt;\".", error)
+            UNCLOSED_TAG: $._("It looks like your \"&lt;%(openTag_name)s&gt;\" tag never closes.", error),
+            UNEXPECTED_CLOSE_TAG: $._("You have a closing \"&lt;/%(closeTag_name)s&gt;\" tag that doesn't pair with any matching opening tags.", error),
+            UNFINISHED_CSS_PROPERTY: $._("The CSS property \"%(cssProperty_property)s\" is missing a \":\"", error),
+            UNFINISHED_CSS_SELECTOR: $._("The CSS selector \"%(cssSelector_selector)s\" needs to be followed by \"{\"", error),
+            UNFINISHED_CSS_VALUE: $._("The CSS value \"%(cssValue_value)s\" still needs to be finalized with \";\"", error),
+            UNKOWN_CSS_KEYWORD: $._("The CSS @keyword \"%(cssKeyword_value)s\" does not match any known @keywords.", error),
+            UNQUOTED_ATTR_VALUE: $._("Make sure your attribute value starts with an opening double quote.", error),
+            UNTERMINATED_ATTR_VALUE: $._("It looks like your \"&lt;%(openTag_name)s&gt;\" tag's \"%(attribute_name_value)s\" attribute has a value that doesn't end with a closing double quote.", error),
+            UNTERMINATED_CLOSE_TAG: $._("It looks like your closing \"&lt;/%(closeTag_name)s&gt;\" tag doesn't end with a \"&gt;\".", error),
+            UNTERMINATED_COMMENT: $._("It looks like your comment doesn't end with a \"--&gt;\".", error),
+            UNTERMINATED_CSS_COMMENT: $._("It looks like your CSS comment doesn't end with a \"*/\".", error),
+            UNTERMINATED_OPEN_TAG: $._("It looks like your opening \"&lt;%(openTag_name)s&gt;\" tag doesn't end with a \"&gt;\".", error),
+            UNKNOWN_SLOWPARSE_ERROR: $._("Something's wrong with the HTML, but we're not sure what.")
         })[error.type];
     },
 
@@ -545,10 +584,6 @@ window.WebpageOutput = Backbone.View.extend({
     test: function(userCode, tests, errors, callback) {
         var errorCount = errors.length;
 
-        if (errorCount > 0) {
-            return callback(errors, []);
-        }
-
         this.tester.test(this.userDOM, tests, errors,
             function(errors, testResults) {
                 if (errorCount !== errors.length) {
@@ -563,7 +598,6 @@ window.WebpageOutput = Backbone.View.extend({
                         $._("A critical problem occurred in your program " +
                             "making it unable to run."));
                 }
-
                 callback(errors, testResults);
             }.bind(this));
     },
@@ -571,7 +605,9 @@ window.WebpageOutput = Backbone.View.extend({
     postProcessing: function(oldPageTitle) {
         var doc = this.getDocument();
         var self = this;
-        $(doc).find("a").attr("rel", "nofollow").each(function() {
+        
+        $(doc).find("a").attr("target", "_blank")
+            .attr("rel", "nofollow").each(function() {
             var url = $(this).attr("href");
             if (url && url[0] === "#") {
                 $(this).attr("href", "javascript:void(0)").click(function() {
@@ -583,11 +619,12 @@ window.WebpageOutput = Backbone.View.extend({
                 return;
             }
 
-            $(this).attr("href", "javascript:void(0)").click(function() {
+            $(this).off("mouseup").on("mouseup", function() {
                 self.output.postParent({
                     action: "link-click",
                     url: url
                 });
+                return false;
             });
         });
 
@@ -600,14 +637,116 @@ window.WebpageOutput = Backbone.View.extend({
         }
     },
 
-    runCode: function(userCode, callback) {
+    injectStyles: function(code) {
+        var injection = "<style type\"text/css\">"+
+        ".ka_active_element { box-shadow: 0 0 10px 1px #85B2F7; }"+
+        "</style>";
+
+        var top = "";
+        if(/^[\d\D]*?<head[\d\D]*?>/.test(code)) {
+            top = RegExp.lastMatch;
+        } else if (/^[\d\D]*?<html[\d\D]*?>/.test(code)) {
+            top = RegExp.lastMatch;
+        }
+        code = code.slice(0,top.length)+injection+code.slice(top.length);
+        return code;
+    },
+
+    runCode: function(userCode, callback, cursor) {
         var doc = this.getDocument();
         var oldPageTitle = $(doc).find("head > title").text();
+        userCode = this.injectStyles(userCode);
         doc.open();
         doc.write(userCode);
         doc.close();
         this.postProcessing(oldPageTitle);
         callback([], userCode);
+        // This can be a post processing step no need to block everything else
+        // Especially considering it cannot raise errors (wrapped in try-catch)
+        this.setCursor(cursor);
+    },
+
+    /*
+     * This function will search down the parse tree created by slowparse until it finds where the 
+     * current cursor is. If the cursor is currently in an open tag or we are currently selecting
+     * exactly one element, it will highlight that element.
+     */
+    setCursor: function(cursor) {
+        if (!this.output.lastRunWasSuccess) {
+            return;
+        }
+        if (this.lastCursor === cursor) {
+            return;
+        } else {
+            this.lastCursor = cursor;
+        }
+
+        // This should be stable, however since one of the HTML strings is parsed by Slowparse and one
+        // is parsed by the browser there is always the possibility of a mismatch leading to an error
+        // In that case its not the user's fault, don't bother them about it.
+        try {
+            cursor = {
+                start: Math.min(cursor.start, cursor.end),
+                end: Math.max(cursor.start, cursor.end)
+            };
+            var tag = this.findTagForCursor(cursor, this.userDOM, this.getDocument());
+
+            $(this.getDocument()).find(".ka_active_element").removeClass("ka_active_element");
+            if (tag && tag.tagName && tag.tagName.toLowerCase() !== "html" && tag.tagName.toLowerCase() !== "body") {
+                $(tag).addClass("ka_active_element");
+            }
+        } catch (e) {
+            if (console) {
+                console.error("Error setting cursor: ", e);
+            }
+        }
+    },
+
+    findTagForCursor: function(cursor, annotated, target) {
+        var notTextNode = function(n) {
+            return n.nodeType !== 3;
+        };
+        var isSelection = (cursor.start !== cursor.end);
+        var nodes = _.filter(annotated.childNodes, notTextNode);
+        for (var i=0; i<nodes.length; i++) {
+            node = nodes[i];
+            var openTagStart = (node.parseInfo.openTag ? node.parseInfo.openTag.start : node.parseInfo.start);
+            var openTagEnd = (node.parseInfo.openTag ? node.parseInfo.openTag.end : node.parseInfo.end);
+            var endPos = (node.parseInfo.closeTag ? node.parseInfo.closeTag.end : openTagEnd);
+
+            // If none of the selection is inside the tag then move along
+            if (cursor.start >= endPos) {
+                continue;
+            // If the cursor is anywhere inside the tag
+            } else if (cursor.start > openTagStart) {
+                // If the cursor is inside the start tag select it
+                if (!isSelection && cursor.start < openTagEnd) {
+                    var tagIndex = $(annotated).find(node.tagName).index(node);
+                    return $(target).find(node.tagName)[tagIndex];
+                } 
+                // If the cursor is somewhere between the start and end tags
+                // try searching its children
+                if (node.parseInfo.closeTag && cursor.start >= openTagEnd && cursor.end <= node.parseInfo.closeTag.start) {
+                    var tagIndex = $(annotated).find(node.tagName).index(node);
+                    var targetNode = $(target).find(node.tagName)[tagIndex];
+                    return this.findTagForCursor(cursor, node, targetNode);
+                }
+                break;
+            // If the cursor is a selection and it contains exactly one tag select it
+            } else if (isSelection && cursor.end >= endPos) {
+                if (i < (nodes.length-1)) {
+                    var next = nodes[i+1];
+                    var nextOpenTagStart = (next.parseInfo.openTag ? next.parseInfo.openTag.start
+                                                                    : next.parseInfo.start);
+                    if (cursor.end > nextOpenTagStart) {
+                        break;
+                    }
+                }
+                var tagIndex = $(annotated).find(node.tagName).index(node);
+                return $(target).find(node.tagName)[tagIndex];
+            }
+        }
+        return undefined;
     },
 
     clear: function() {

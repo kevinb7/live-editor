@@ -1,137 +1,11 @@
 this["Handlebars"] = this["Handlebars"] || {};
 this["Handlebars"]["templates"] = this["Handlebars"]["templates"] || {};
-this["Handlebars"]["templates"]["tipbar"] = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
-  this.compilerInfo = [4,'>= 1.0.0'];
-helpers = this.merge(helpers, Handlebars.helpers); data = data || {};
-  var buffer = "", stack1, helper, options, self=this, functionType="function", blockHelperMissing=helpers.blockHelperMissing;
-
-function program1(depth0,data) {
-  
-  
-  return "Oh noes!";
-  }
-
-function program3(depth0,data) {
-  
-  
-  return "Show me where";
-  }
-
-  buffer += "<div class=\"tipbar\">\n    <div class=\"speech-arrow\"></div>\n    <div class=\"error-buddy\"></div>\n    <div class=\"tipnav\">\n        <a href=\"\" class=\"prev\"><span class=\"ui-icon ui-icon-circle-triangle-w\"></span></a>\n        <span class=\"current-pos\"></span>\n        <a href=\"\" class=\"next\"><span class=\"ui-icon ui-icon-circle-triangle-e\"></span></a>\n    </div>\n    <div class=\"text-wrap\">\n        <div class=\"oh-no\">";
-  options={hash:{},inverse:self.noop,fn:self.program(1, program1, data),data:data}
-  if (helper = helpers._) { stack1 = helper.call(depth0, options); }
-  else { helper = (depth0 && depth0._); stack1 = typeof helper === functionType ? helper.call(depth0, options) : helper; }
-  if (!helpers._) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(1, program1, data),data:data}); }
-  if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "</div>\n        <div class=\"message\"></div>\n        <div class=\"show-me\"><a href>";
-  options={hash:{},inverse:self.noop,fn:self.program(3, program3, data),data:data}
-  if (helper = helpers._) { stack1 = helper.call(depth0, options); }
-  else { helper = (depth0 && depth0._); stack1 = typeof helper === functionType ? helper.call(depth0, options) : helper; }
-  if (!helpers._) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(3, program3, data),data:data}); }
-  if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "</a></div>\n    </div>\n</div>";
-  return buffer;
-  });;
-/**
- * This is called tipbar for historical reasons.
- * Originally, it appeared as a red bar sliding up from the bottom of the
- * canvas. Now it just powers the error reporting mechanism, which no longer
- * looks like a bar
- */
-
-window.TipBar = Backbone.View.extend({
-    initialize: function(options) {
-        this.output = options.output;
-        this.pos = 0;
-        this.texts = [];
-        this.render();
-        this.bind();
-    },
-
-    render: function() {
-        this.$el.append(Handlebars.templates["tipbar"]());
-    },
-
-    bind: function() {
-        var self = this;
-
-        this.$el.on("click", ".tipbar .tipnav a", function() {
-            if (!$(this).hasClass("ui-state-disabled")) {
-                self.pos += $(this).hasClass("next") ? 1 : -1;
-                self.show();
-            }
-
-            self.output.postParent({ focus: true });
-
-            return false;
-        });
-
-        this.$el.on("click", ".tipbar .text-wrap a", function() {
-            var error = self.texts[self.pos];
-
-            self.output.postParent({ cursor: error });
-
-            return false;
-        });
-    },
-
-    show: function(type, texts, callback) {
-        if (texts) {
-            this.pos = 0;
-            this.texts = texts;
-        } else {
-            texts = this.texts;
-        }
-
-        var pos = this.pos;
-        var bar = this.$el.find(".tipbar");
-
-        // Inject current text
-        bar
-            .find(".current-pos").text(texts.length > 1 ? (pos + 1) + "/" + texts.length : "").end()
-            .find(".message").html(texts[pos].text || texts[pos] || "").end()
-            .find("a.prev").toggleClass("ui-state-disabled", pos === 0).end()
-            .find("a.next").toggleClass("ui-state-disabled", pos + 1 === texts.length).end();
-
-        this.$el.find(".show-me").toggle(texts[pos].row !== -1);
-
-        bar.find(".tipnav").toggle(texts.length > 1);
-
-        // Only animate the bar in if it's not visible
-        if (!bar.is(":visible")) {
-            bar
-                .css({ top: 400, opacity: 0.1 })
-                .show()
-                .animate({
-                    top: this.$el.find(".toolbar").is(":visible") ? 33 : 100,
-                    opacity: 0.9},
-                    300);
-        }
-
-        if (callback) {
-            callback(texts[pos]);
-        }
-    },
-
-    hide: function() {
-        var bar = this.$el.find(".tipbar");
-        if (bar.is(':visible')) {
-            bar.animate({ top: 400, opacity: 0.1 }, 300, function() {
-                $(this).hide();
-            });
-        }
-    }
-});
-this["Handlebars"] = this["Handlebars"] || {};
-this["Handlebars"]["templates"] = this["Handlebars"]["templates"] || {};
 this["Handlebars"]["templates"]["output"] = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
-  this.compilerInfo = [4,'>= 1.0.0'];
-helpers = this.merge(helpers, Handlebars.helpers); data = data || {};
-  
+  helpers = helpers || Handlebars.helpers;
+  var foundHelper, self=this;
 
 
-  return "<div class=\"output\"></div>\n<div class=\"overlay error-overlay hidden\"></div>\n<div class=\"test-errors\" style=\"display: none;\"></div>";
-  });;
+  return "<div class=\"output\"></div>\n<div class=\"test-errors\" style=\"display: none;\"></div>";});;
 var PooledWorker = function(filename, onExec) {
     this.pool = [];
     this.curID = 0;
@@ -452,6 +326,7 @@ window.LiveEditorOutput = Backbone.View.extend({
     recording: false,
     loaded: false,
     outputs: {},
+    lastRunWasSuccess: false,
 
     initialize: function(options) {
         this.render();
@@ -461,21 +336,16 @@ window.LiveEditorOutput = Backbone.View.extend({
         this.assertions = [];
 
         this.config = new ScratchpadConfig({});
-
+        
         if (options.outputType) {
             this.setOutput(options.outputType);
         }
-
-        this.tipbar = new TipBar({
-            el: this.el,
-            output: this
-        });
 
         this.bind();
     },
 
     render: function() {
-        this.$el.html(Handlebars.templates["output"]());
+        this.$el.html("<div class=\"output\"></div>");
     },
 
     bind: function() {
@@ -490,9 +360,28 @@ window.LiveEditorOutput = Backbone.View.extend({
             el: this.$el.find(".output"),
             config: this.config,
             output: this,
-            type: outputType,
-            useStepper: true
+            type: outputType
         });
+
+        if (this.output.debugger) {
+            var debugr = this.output.debugger;
+            var self = this;
+
+            debugr.onBreakpoint = function () {
+                self.postParent({
+                    type: "debugger",
+                    action: "step",
+                    line: debugr.currentLine
+                });
+            };
+
+            debugr.onFunctionDone = function () {
+                self.postParent({
+                    type: "debugger",
+                    action: "done"
+                });
+            };
+        }
     },
 
     setPaths: function(data) {
@@ -528,9 +417,11 @@ window.LiveEditorOutput = Backbone.View.extend({
         // let the parent know we're up and running
         this.notifyActive();
 
+        if (typeof(event.data) === "object") {
+            return;
+        }
         try {
             data = JSON.parse(event.data);
-
         } catch (err) {
             return;
         }
@@ -540,8 +431,8 @@ window.LiveEditorOutput = Backbone.View.extend({
             this.setOutput(outputType);
         }
 
-        if (data.type === "stepper") {
-            this.handleStepperMessage(data);
+        if (data.type === "debugger") {
+            this.handleDebuggerMessage(data);
             return;
         }
 
@@ -560,10 +451,8 @@ window.LiveEditorOutput = Backbone.View.extend({
 
         // Code to be executed
         if (data.code != null) {
-            // We got new code. Hide the tipbar to give them a chance to fix things up
-            this.tipbar.hide();
             this.config.switchVersion(data.version);
-            this.runCode(data.code);
+            this.runCode(data.code, undefined, data.cursor, data.noLint);
         }
 
         if (data.onlyRunTests != null) {
@@ -600,88 +489,62 @@ window.LiveEditorOutput = Backbone.View.extend({
         }
     },
 
-    handleStepperMessage: function(data) {
-        var stepper = this.output.stepper;
-        var action;
+    handleDebuggerMessage: function (data) {
+        var debugr = this.output.debugger;
 
-        if (data.action === "run") {
-            if (stepper.halted()) {
-                stepper.reset();
-            }
-            action = stepper.run(data.ignoreBreakpoints);
-            if (stepper.halted()) {
-                this.postParent({
-                    type: "stepper",
-                    action: "halted"
-                });
-            } else {
-                this.postParent({
-                    type: "stepper",
-                    action: "step",
-                    line: action.line
-                });
+        if (data.action === "debug") {
+            if (data.state === "on") {
+                this.output.debugger.breakpointsEnabled = true;
+            } else if (data.state === "off") {
+                this.output.debugger.breakpointsEnabled = false;
+                debugr.resume();
+                this.output.restart();
             }
         }
 
-        if (data.action === "reset") {
-            stepper.reset();
+        if (data.action === "start") {
             this.output.clear();
+            debugr.breakpoints = data.breakpoints;
+            debugr.start(data.paused);
         }
 
-        if (data.action === "stepOver") {
-            action = stepper.stepOver();
-            if (stepper.halted()) {
-                this.postParent({
-                    type: "stepper",
-                    action: "halted"
-                });
-            } else {
-                this.postParent({
-                    type: "stepper",
-                    action: "step",
-                    line: action.line
-                });
-            }
+        if (data.action === "resume") {
+            debugr.resume();
         }
 
         if (data.action === "stepIn") {
-            action = stepper.stepIn();
-            if (stepper.halted()) {
-                this.postParent({
-                    type: "stepper",
-                    action: "halted"
-                });
-            } else {
-                this.postParent({
-                    type: "stepper",
-                    action: "step",
-                    line: action.line
-                });
-            }
+            debugr.stepIn();
+            this.postParent({
+                type: "debugger",
+                action: "step",
+                line: debugr.currentLine
+            });
+        }
+
+        if (data.action === "stepOver") {
+            debugr.stepOver();
+            this.postParent({
+                type: "debugger",
+                action: "step",
+                line: debugr.currentLine
+            });
         }
 
         if (data.action === "stepOut") {
-            action = stepper.stepOut();
-            if (stepper.halted()) {
-                this.postParent({
-                    type: "stepper",
-                    action: "halted"
-                });
-            } else {
-                this.postParent({
-                    type: "stepper",
-                    action: "step",
-                    line: action.line
-                });
-            }
+            debugr.stepOut();
+            this.postParent({
+                type: "debugger",
+                action: "step",
+                line: debugr.currentLine
+            });
         }
 
         if (data.action === "setBreakpoint") {
-            stepper.setBreakpoint(data.line);
+            debugr.setBreakpoint(data.line);
         }
 
         if (data.action === "clearBreakpoint") {
-            stepper.clearBreakpoint(data.line);
+            debugr.clearBreakpoint(data.line);
         }
     },
 
@@ -710,70 +573,83 @@ window.LiveEditorOutput = Backbone.View.extend({
 
         // Prime the test queue
         this.validate = validate;
-
-        // We evaluate the test code to see if it itself has any syntax errors
-        // This also ends up pushing the tests onto this.tests
-        var error = this.output.initTests(validate);
-
-        // Display errors encountered while evaluating the test code
-        if (error && error.message) {
-            this.$el.find(".test-errors").text(error.message).show();
-        } else {
-            this.$el.find(".test-errors").hide();
-        }
     },
 
-    runCode: function(userCode, callback) {
-
+    runCode: function(userCode, callback, cursor, noLint) {
         this.currentCode = userCode;
 
-        var runDone = function(errors, testResults) {
+        var buildDone = function(errors) {
             errors = this.cleanErrors(errors || []);
+            this.lastRunWasSuccess = !errors.length;
 
             if (!this.loaded) {
                 this.postParent({ loaded: true });
                 this.loaded = true;
             }
-
-            // A callback for working with a test suite
-            if (callback) {
-                callback(errors, testResults);
-                return;
-            }
-
             this.postParent({
                 results: {
                     code: userCode,
                     errors: errors,
-                    tests: testResults || [],
                     assertions: this.assertions
                 }
             });
 
-            this.toggleErrors(errors);
+            this.toggle(!errors.length);
+
+            // A callback for working with a test suite
+            if (callback) {
+                //This is synchrynous
+                this._test(userCode, this.validate, errors, function(errors, testResults) {
+                    callback(errors, testResults);
+                    return;
+                });
+            // Normal case
+            } else {
+                // This is debounced (async)
+                this.test(userCode, this.validate, errors, function(errors, testResults) {
+
+                    this.postParent({
+                        results: {
+                            code: userCode,
+                            errors: errors,
+                            tests: testResults
+
+                        }
+                    });
+                }.bind(this));
+            }
         }.bind(this);
 
-        this.lint(userCode, function(errors) {
-            // Run the tests (even if there are lint errors)
-            this.test(userCode, this.validate, errors, function(errors, testResults) {
-                if (errors.length > 0 || this.onlyRunTests) {
-                    return runDone(errors, testResults);
-                }
+        var lintDone = function(errors) {
+            if (errors.length > 0 || this.onlyRunTests) {
+                return buildDone(errors);
+            }
 
-                // Then run the user's code
-                try {
-                    this.output.runCode(userCode, function(errors) {
-                        runDone(errors, testResults);
-                    });
+            // Then run the user's code
+            try {
+                this.output.runCode(userCode, function(errors) {
+                    buildDone(errors);
+                }, cursor);
 
-                } catch (e) {
-                    runDone([e], testResults);
-                }
-            }.bind(this));
-        }.bind(this));
+            } catch (e) {
+                buildDone([e]);
+            }        
+        }.bind(this);
+
+        // Always lint the first time, so that PJS can populate its list of globals
+        if (noLint && this.firstLint) {
+            lintDone([]);
+        } else {
+            this.lint(userCode, lintDone);
+            this.firstLint = true;
+        }
     },
 
-    test: function(userCode, validate, errors, callback) {
+
+    test: _.throttle(function() {
+        this._test.apply(this, arguments);
+    }, 200),
+    _test: function(userCode, validate, errors, callback) {
         this.output.test(userCode, validate, errors, callback);
     },
 
@@ -859,30 +735,6 @@ window.LiveEditorOutput = Backbone.View.extend({
 
     clean: function(str) {
         return String(str).replace(/</g, "&lt;");
-    },
-
-    toggleErrors: function(errors) {
-        var hasErrors = !!errors.length;
-
-        this.$el.find(".error-overlay").toggle(hasErrors);
-
-        this.toggle(!hasErrors);
-
-        if (this.errorDelay) {
-            clearTimeout(this.errorDelay);
-        }
-
-        if (!hasErrors) {
-            this.tipbar.hide("Error");
-            return;
-        }
-
-        this.errorDelay = setTimeout(function() {
-            this.errorDelay = null;
-            if (errors.length > 0) {
-                this.tipbar.show("Error", errors);
-            }
-        }.bind(this), 1200);
     }
 });
 

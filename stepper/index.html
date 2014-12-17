@@ -18,15 +18,6 @@
         #sample-live-editor {
             padding: 0;
         }
-
-        .ace_breakpoint {
-            background: rgb(0,128,255);
-            color: white;
-        }
-
-        .ace_active-line {
-            background-color: rgba(0,128,255,0.3) !important;
-        }
     </style>
 </head>
 <body>
@@ -43,6 +34,13 @@
     <script src="build/js/live-editor.debugger.js"></script>
 
     <script>
+    var outputUrl = "output.html";
+    var useDebugger = false;
+    if (location.search.indexOf("debugger=true") !== -1) {
+        outputUrl += "?debugger=true";
+        useDebugger = true;
+    }
+
     window.liveEditor = new LiveEditor({
         el: $("#sample-live-editor"),
         code: window.localStorage["test-code"] || "rect(10, 10, 100, 100);",
@@ -53,15 +51,12 @@
         workersDir: "build/workers/",
         externalsDir: "build/external/",
         imagesDir: "build/images/",
-        execFile: "output.html",
-        jshintFile: "build/external/jshint/jshint.js"
+        execFile: outputUrl,
+        jshintFile: "build/external/jshint/jshint.js",
+        useDebugger: useDebugger
     });
     liveEditor.editor.on("change", function() {
         window.localStorage["test-code"] = liveEditor.editor.text();
-    });
-    ScratchpadDebugger.init({
-        liveEditor: liveEditor,
-        editor: liveEditor.editor.editor
     });
     ScratchpadAutosuggest.init(liveEditor.editor.editor);
     </script>

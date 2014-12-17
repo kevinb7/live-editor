@@ -19,6 +19,9 @@ window.AceEditor = Backbone.View.extend({
             "imageModal",
             "colorPicker",
             "numberScrubber"
+        ],
+        ace_sql: [
+            "numberScrubber"
         ]
     },
 
@@ -51,6 +54,11 @@ window.AceEditor = Backbone.View.extend({
             record: this.record
         });
 
+        // TODO(bbondy): Support multiple content types for autosuggest.
+        if (this.tooltips[this.type].indexOf("autoSuggest") !== -1) {
+            ScratchpadAutosuggest.init(this.editor);
+        }
+
         // Make the editor vertically resizable
         if (this.$el.resizable) {
             this.$el.resizable({
@@ -63,6 +71,23 @@ window.AceEditor = Backbone.View.extend({
                 }
             });
         }
+
+        var $sensorFrame = $("<iframe>").css({
+            width: "100%",
+            height: 0,
+            position: "absolute",
+            visibility: "hidden"
+        }).appendTo(this.el);
+
+        $($sensorFrame[0].contentWindow.window).on("resize", function() {
+            // Force the editor to resize.
+            this.editor.resize();
+
+            // Set the font size. Scale the font size down when the
+            // size of the editor is too small.
+            this.editor.setFontSize(this.$el.width() < 400 ?
+                "12px" : "14px");
+        }.bind(this));
 
         // Kill default selection on the hot number
         this.$el.on("mousedown", ".tooltip", function(e) {
@@ -82,6 +107,17 @@ window.AceEditor = Backbone.View.extend({
             self.trigger("change");
         });
 
+        this.editor.on("click", function() {
+            self.trigger("click");
+        });
+
+        this.editor.selection.on("changeCursor", function() {
+            self.trigger("changeCursor");
+        });
+        this.editor.selection.on("changeSelection", function() {
+            self.trigger("changeCursor");
+        });
+
         this.config.on("versionSwitched", function(version) {
             self.config.runVersion(version, self.type + "_editor", self);
         });
@@ -89,6 +125,10 @@ window.AceEditor = Backbone.View.extend({
         this.config.editor = this;
 
         this.reset();
+    },
+
+    remove: function() {
+        this.tooltipEngine.remove();
     },
 
     bindRecord: function() {
@@ -252,6 +292,72 @@ window.AceEditor = Backbone.View.extend({
         this.editor.renderer.setShowGutter(toggle);
     },
 
+    getAllFolds: function() {
+        var session = this.editor.session;
+        return _.map(session.getAllFolds(), function(fold) {
+            return [fold.start.row, fold.end.row];
+        });
+    },
+
+    setFolds: function(folds) {
+        _.each(folds, function(fold) {
+            this.editor.session.foldAll(fold[0], fold[1], 0);
+        }.bind(this));
+    },
+
+    blockPaste: function(chastise) {
+        // Used throughout the function
+        var aceEditor = this.editor;
+
+        // First, we remember the original functions, but only once,
+        // in case this function gets run again
+        if (!aceEditor.originalCut) {
+            aceEditor.originalCut = aceEditor.onCut;
+            aceEditor.originalCopy = aceEditor.onCopy;
+            aceEditor.originalPaste = aceEditor.onPaste;
+        }
+
+        aceEditor.onCut = function(clipboardText) {
+            aceEditor.lastCopied = this.getSelectedText();
+            aceEditor.originalCut.apply(aceEditor);
+        };
+        aceEditor.onCopy = function(clipboardText) {
+            aceEditor.lastCopied = this.getSelectedText();
+            aceEditor.originalCopy.apply(aceEditor);
+        };
+        aceEditor.onPaste = function(clipboardText) {
+            // Allow them to paste either if it matches what they cut/copied,
+            // or if its a small # of characters, most likely symbols
+            // that dont exist on their keyboard, or if its a URL
+            var isUrl = function(str) {
+                return str.match(/\s*https?:\/\/[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)\s*/);
+            };
+            if (clipboardText === aceEditor.lastCopied ||
+                clipboardText.length < 3 ||
+                isUrl(clipboardText)) {
+                aceEditor.originalPaste.apply(aceEditor, [clipboardText]);
+                return;
+            } else {
+                chastise();
+            }
+        };
+
+        // Block dragging
+        var isLocal = false;
+        aceEditor.container.addEventListener("dragstart", function() {
+            isLocal = true;
+        });
+        aceEditor.container.addEventListener("dragend", function() {
+            isLocal = false;
+        });
+        aceEditor.container.addEventListener("drop", function(e) {
+            if (!isLocal) {
+                chastise();
+                e.stopPropagation();
+            }
+        }, true);
+    },
+
     /*
      * Utility plugins for working with the editor
      */
@@ -265,6 +371,16 @@ window.AceEditor = Backbone.View.extend({
 
     getCursor: function() {
         return this.editor.getCursorPosition();
+    },
+
+    getSelectionIndices: function() {
+        var rng = this.editor.getSelectionRange();
+        var doc = this.editor.getSession().getDocument();
+
+        return {
+            start: doc.positionToIndex(rng.start), 
+            end: doc.positionToIndex(rng.end)
+        };
     },
 
     // Set the cursor position on the editor
@@ -324,3 +440,4 @@ window.AceEditor = Backbone.View.extend({
 
 LiveEditor.registerEditor("ace_pjs", AceEditor);
 LiveEditor.registerEditor("ace_webpage", AceEditor);
+LiveEditor.registerEditor("ace_sql", AceEditor);

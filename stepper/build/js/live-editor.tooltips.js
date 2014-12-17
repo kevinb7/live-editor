@@ -7,6 +7,8 @@
  * 
  */
 (function ($) {
+	var isTouch = 'ontouchend' in document;
+
 	var ColorPicker = function () {
 		var
 			ids = {},
@@ -24,6 +26,11 @@
 				color: 'ff0000',
 				livePreview: true,
 				flat: false
+			},
+			events = {
+				start: isTouch ? "touchstart": "mousedown",
+				end: isTouch ? "touchend" : "mouseup",
+				move: isTouch ? "touchmove" : "mousemove"
 			},
 			fillRGBFields = function  (hsb, cal) {
 				var rgb = HSBToRGB(hsb);
@@ -104,6 +111,21 @@
 				$(this).parent().parent().data('colorpicker').fields.parent().removeClass('colorpicker_focus');
 				$(this).parent().addClass('colorpicker_focus');
 			},
+			getPagePos = function (ev) {
+				var pageX = ev.pageX;
+				var pageY = ev.pageY;
+				if (!pageX && !pageY) {
+					var targetTouches = ev.originalEvent.targetTouches;
+					if (targetTouches && targetTouches[0]) {
+						pageX = targetTouches[0].pageX;
+						pageY = targetTouches[0].pageY;
+					}
+				}
+				return {
+					pageX: pageX,
+					pageY: pageY
+				};
+			},
 			downIncrement = function (ev) {
 				var field = $(this).parent().find('input').focus();
 				var current = {
@@ -114,8 +136,8 @@
 					val: parseInt(field.val(), 10),
 					preview: $(this).parent().parent().data('colorpicker').livePreview					
 				};
-				$(document).bind('mouseup', current, upIncrement);
-				$(document).bind('mousemove', current, moveIncrement);
+				$(document).bind(events.end, current, upIncrement);
+				$(document).bind(events.move, current, moveIncrement);
 			},
 			moveIncrement = function (ev) {
 				ev.data.field.val(Math.max(0, Math.min(ev.data.max, parseInt(ev.data.val + ev.pageY - ev.data.y, 10))));
@@ -127,25 +149,32 @@
 			upIncrement = function (ev) {
 				change.apply(ev.data.field.get(0), [true]);
 				ev.data.el.removeClass('colorpicker_slider').find('input').focus();
-				$(document).unbind('mouseup', upIncrement);
-				$(document).unbind('mousemove', moveIncrement);
+				$(document).unbind(events.end, upIncrement);
+				$(document).unbind(events.move, moveIncrement);
 				return false;
 			},
 			downHue = function (ev) {
+				ev.preventDefault();
 				var current = {
 					cal: $(this).parent(),
 					y: $(this).offset().top
 				};
+				ev.data = current;
+				moveHue(ev);
 				current.preview = current.cal.data('colorpicker').livePreview;
-				$(document).bind('mouseup', current, upHue);
-				$(document).bind('mousemove', current, moveHue);
+				$(document).bind(events.end, current, upHue);
+				$(document).bind(events.move, current, moveHue);
 			},
 			moveHue = function (ev) {
+				var pos = getPagePos(ev);
+				if (!pos.pageX && !pos.pageY) {
+					return false;
+				}
 				change.apply(
 					ev.data.cal.data('colorpicker')
 						.fields
 						.eq(4)
-						.val(parseInt(360*(150 - Math.max(0,Math.min(150,(ev.pageY - ev.data.y))))/150, 10))
+						.val(parseInt(360*(150 - Math.max(0,Math.min(150,(pos.pageY - ev.data.y))))/150, 10))
 						.get(0),
 					[ev.data.preview]
 				);
@@ -155,28 +184,35 @@
 				moveHue(ev);
 				fillRGBFields(ev.data.cal.data('colorpicker').color, ev.data.cal.get(0));
 				fillHexFields(ev.data.cal.data('colorpicker').color, ev.data.cal.get(0));
-				$(document).unbind('mouseup', upHue);
-				$(document).unbind('mousemove', moveHue);
+				$(document).unbind(events.end, upHue);
+				$(document).unbind(events.move, moveHue);
 				return false;
 			},
 			downSelector = function (ev) {
+				ev.preventDefault();
 				var current = {
 					cal: $(this).parent(),
 					pos: $(this).offset()
 				};
+				ev.data = current;
+				moveSelector(ev);
 				current.preview = current.cal.data('colorpicker').livePreview;
-				$(document).bind('mouseup', current, upSelector);
-				$(document).bind('mousemove', current, moveSelector);
+				$(document).bind(events.end, current, upSelector);
+				$(document).bind(events.move, current, moveSelector);
 			},
 			moveSelector = function (ev) {
+				var pos = getPagePos(ev);
+				if (!pos.pageX && !pos.pageY) {
+					return false;
+				}
 				change.apply(
 					ev.data.cal.data('colorpicker')
 						.fields
 						.eq(6)
-						.val(parseInt(100*(150 - Math.max(0,Math.min(150,(ev.pageY - ev.data.pos.top))))/150, 10))
+						.val(parseInt(100*(150 - Math.max(0,Math.min(150,(pos.pageY - ev.data.pos.top))))/150, 10))
 						.end()
 						.eq(5)
-						.val(parseInt(100*(Math.max(0,Math.min(150,(ev.pageX - ev.data.pos.left))))/150, 10))
+						.val(parseInt(100*(Math.max(0,Math.min(150,(pos.pageX - ev.data.pos.left))))/150, 10))
 						.get(0),
 					[ev.data.preview]
 				);
@@ -186,8 +222,8 @@
 				moveSelector(ev);
 				fillRGBFields(ev.data.cal.data('colorpicker').color, ev.data.cal.get(0));
 				fillHexFields(ev.data.cal.data('colorpicker').color, ev.data.cal.get(0));
-				$(document).unbind('mouseup', upSelector);
-				$(document).unbind('mousemove', moveSelector);
+				$(document).unbind(events.end, upSelector);
+				$(document).unbind(events.move, moveSelector);
 				return false;
 			},
 			enterSubmit = function (ev) {
@@ -220,7 +256,7 @@
 				if (cal.data('colorpicker').onShow.apply(this, [cal.get(0)]) != false) {
 					cal.show();
 				}
-				$(document).bind('mousedown', {cal: cal}, hide);
+				$(document).bind(events.start, {cal: cal}, hide);
 				return false;
 			},
 			hide = function (ev) {
@@ -228,7 +264,7 @@
 					if (ev.data.cal.data('colorpicker').onHide.apply(this, [ev.data.cal.get(0)]) != false) {
 						ev.data.cal.hide();
 					}
-					$(document).unbind('mousedown', hide);
+					$(document).unbind(events.start, hide);
 				}
 			},
 			isChildOf = function(parentEl, el, container) {
@@ -391,7 +427,7 @@
 						options.origColor = opt.color;
 						var id = 'collorpicker_' + parseInt(Math.random() * 1000);
 						$(this).data('colorpickerId', id);
-                        options.parent = $(this);
+						options.parent = $(this);
 						var cal = $(tpl).attr('id', id).attr('data-parent', $(this).attr('id'));
 						if (options.flat) {
 							cal.appendTo(this).show();
@@ -405,13 +441,17 @@
 												.bind('blur', blur)
 												.bind('focus', focus);
 						cal
-							.find('span').bind('mousedown', downIncrement).end()
+							.find('span').bind(events.start, downIncrement).end()
 							.find('>div.colorpicker_current_color').bind('click', restoreOriginal);
-						options.selector = cal.find('div.colorpicker_color').bind('mousedown', downSelector);
+						// Prevent any sort of native scrolling
+						cal.bind(events.move, function(e) {
+							e.preventDefault();
+						});
+						options.selector = cal.find('div.colorpicker_color').bind(events.start, downSelector);
 						options.selectorIndic = options.selector.find('div div');
 						options.el = this;
 						options.hue = cal.find('div.colorpicker_hue div');
-						cal.find('div.colorpicker_hue').bind('mousedown', downHue);
+						cal.find('div.colorpicker_hue').bind(events.start, downHue);
 						options.newColor = cal.find('div.colorpicker_new_color');
 						options.currentColor = cal.find('div.colorpicker_current_color');
 						cal.data('colorpicker', options);
@@ -1770,7 +1810,7 @@ window.TooltipEngine = Backbone.View.extend({
             cb.target.on(cb.event, cb.fn);
         });
 
-
+        
         this.requestTooltipDefaultCallback = function() {  //Fallback to hiding
             ScratchpadAutosuggest.enableLiveCompletion(true);
             if (this.currentTooltip && this.currentTooltip.$el) {
@@ -1779,18 +1819,17 @@ window.TooltipEngine = Backbone.View.extend({
             }
         }.bind(this);
 
-        this.editor.on("requestTooltip", this.requestTooltipDefaultCallback);
+        this.editor.on("requestTooltip", this.requestTooltipDefaultCallback);   
     },
 
     remove: function() {
         _.each(this.callbacks, function(cb) {
             cb.target.off(cb.event, cb.fn);
         });
-        _.each(this.tooltipCallbacks, function(cb) {
-            this.editor.off("requestTooltip", cb);
-        }.bind(this));
-        delete this.callbacks;
-
+        _.each(this.tooltips, function(tooltip) {
+            tooltip.remove();
+        });
+        
         this.editor.off("requestTooltip", this.requestTooltipDefaultCallback);
     },
 
@@ -1824,7 +1863,7 @@ window.TooltipEngine = Backbone.View.extend({
         this.last = params;
 
         this.editor._emit("requestTooltip", params);
-    },
+    }, 
 
     // Returns true if we're inside a comment
     // This isn't a perfect check, but it is close enough.
@@ -1842,23 +1881,23 @@ TooltipEngine.classes = {};
   * Every Tooltip has the following major parts:
   * - initialize(), just accepts options and then tries to attach
   *   the html for the tooltip by callin render() and bind() as required
-  *
+  * 
   * - render() and bind() to set up the HTML
-  *
-  * - A detector function. The detector functions are all bound to the
-  *   requestTooltip event in their respective bind() method. They receive an event with
-  *   information about where the cursor is and whether it got there because of a click,
-  *   selection character added, etc. It chooses to either load its tooltip or let the
+  * 
+  * - A detector function. The detector functions are all bound to the 
+  *   requestTooltip event in their respective bind() method. They receive an event with 
+  *   information about where the cursor is and whether it got there because of a click, 
+  *   selection character added, etc. It chooses to either load its tooltip or let the 
   *   event keep bubbling
   *   > The detector function also sets aceLocation, which saves what portion of the
   *     text the selector is active for.
-  *
-  * - updateText replaces whatever text is specified by the aceLocation
+  *   
+  * - updateText replaces whatever text is specified by the aceLocation 
   *   with the new text. It is common for tooltips to override this function
-  *   so that they can accept a value in a different format, make it into a string
+  *   so that they can accept a value in a different format, make it into a string 
   *   and then pass the formatted value back to the function defined in TooltipBase
   *   to do the actual replace
-  *
+  * 
   * - placeOnScreen which determines where the HTML needs to be moved to in order
   *   for it to show up on by the cursor. This also pulls information from aceLocation
   *
@@ -1866,12 +1905,16 @@ TooltipEngine.classes = {};
 
 window.TooltipBase = Backbone.View.extend({
     bindToRequestTooltip: function() {
-        this.callback = this.detector.bind(this);
-        this.parent.editor.on("requestTooltip", this.callback);
+        if (this.parent) {
+            this.callback = this.detector.bind(this);
+            this.parent.editor.on("requestTooltip", this.callback);
+        }
     },
 
     unbindFromRequestTooltip: function() {
-        this.parent.editor.off("requestTooltip", this.callback);
+        if (this.parent) {
+            this.parent.editor.off("requestTooltip", this.callback);
+        }
     },
 
     placeOnScreen: function() {
@@ -1905,7 +1948,7 @@ window.TooltipBase = Backbone.View.extend({
     },
 
     updateText: function(newText, customSelection) {
-        if (this.parent.options.record.playing) {
+        if (!this.parent || this.parent.options.record.playing) {
             return;
         }
         var parent = this.parent;
@@ -2002,7 +2045,7 @@ TooltipEngine.classes.autoSuggest = TooltipBase.extend({
     },
 
     render: function() {
-        this.$el = $("<div class='tooltip autosuggest'><div class='hotsuggest'></div><div class='arrow'></div></div>")
+        this.$el = $("<div class='tooltip autosuggest hide-while-playing'><div class='hotsuggest'></div><div class='arrow'></div></div>")
             .appendTo("body").hide();
     },
 
@@ -2262,18 +2305,30 @@ TooltipEngine.classes.colorPicker = TooltipBase.extend({
             var $pane = $image.closest(".tab-pane");
             var $tab = this.$("a[href='#"+$pane.attr("id")+"']");
             $tab.tab("show");
-            $pane.find(".imagemodal-content").scrollTop($image.position().top - 100);
+            $pane.find(".imagemodal-content").scrollTop(
+                $image.position().top - 100);
             $image.find("img").click();
         },
 
         render: function() {
-            Handlebars.registerHelper("slugify", this.slugify);
-            Handlebars.registerHelper("patchedEach", this.handlebarsPatchedEach);
+            Handlebars.registerHelper("hasMultipleItems",
+                this.hasMultipleItems);
+            Handlebars.registerHelper("slugify",
+                this.slugify);
+            Handlebars.registerHelper("patchedEach",
+                this.handlebarsPatchedEach);
             this.$el = $(Handlebars.templates["image-modal"]({
                 imagesDir: this.options.imagesDir,
                 classes: ExtendedOutputImages
-            }))
+            }));
             this.$el.appendTo("body").hide();
+        },
+
+        hasMultipleItems: function(arr, options) {
+            if(arr && arr.length > 1) {
+                return options.fn(this);
+            }
+            return options.inverse(this);
         },
 
         slugify: function(text) {
@@ -2305,14 +2360,14 @@ TooltipEngine.classes.colorPicker = TooltipBase.extend({
             _.extend(this.options.record.handlers, {
                 "imagemodal.show": this.modal.show.bind(this.modal),
                 "imagemodal.hide": function(){ 
-                    this.modal.$el.modal("hide")
+                    this.modal.$el.modal("hide");
                 }.bind(this),
                 "imagemodal.selectImg": this.modal.selectImg.bind(this.modal)
             });
         },
 
         detector: function(event) {
-            if (!/<img\s+[^>]*?\s*src=["']([^"']*)$/.test(event.pre)) {
+            if (!/<img\s+[^>]*?\s*src\s*=\s*["']([^"']*)$/.test(event.pre)) {
                 return;
             }
             var urlStart = event.col - RegExp.$1.length;
@@ -2332,7 +2387,13 @@ TooltipEngine.classes.colorPicker = TooltipBase.extend({
         
         updateTooltip: function(url) {
             if (url !== this.currentUrl) {
-                this.currentUrl = url;
+                this.currentUrl = url.trim();
+                if (url === "") {
+                    this.$(".thumb").hide();
+                    this.$(".thumb-throbber").hide();
+                    this.$(".thumb-error").text($._("Enter an image URL.")).show();
+                    return;
+                }
                 var allowedHosts = /(\.|^)?(khanacademy\.org|kastatic\.org|kasandbox\.org|localhost:\d+)$/i;
                 var match = /\/\/([^\/]*)(?:\/|\?|#|$)/.exec(url);
                 var host = match ? match[1] : "";
@@ -2383,6 +2444,12 @@ TooltipEngine.classes.colorPicker = TooltipBase.extend({
             this.modal = new Modal(_.defaults({
                 parent: this
             }, this.options));
+        },
+
+        remove: function() {
+            this.$el.remove();
+            this.modal.remove();
+            this.unbindFromRequestTooltip();
         }
     });
 })();
@@ -2405,7 +2472,7 @@ TooltipEngine.classes.imagePicker = TooltipBase.extend({
         var functionStart = event.col - RegExp.lastMatch.length;
         var paramsStart = functionStart + RegExp.$1.length;
 
-        var pieces = /^(\s*)("?[^\)]*?"?)\s*(\);?|$)/.exec(event.line.slice(paramsStart));
+        var pieces = /^(\s*)(["']?[^\)]*?["']?)\s*(\);?|$)/.exec(event.line.slice(paramsStart));
         var leadingPadding = pieces[1];
         var pathStart = paramsStart + leadingPadding.length;
         var path = pieces[2];
@@ -2544,6 +2611,7 @@ TooltipEngine.classes.numberScrubber = TooltipBase.extend({
 
     render: function() {
         var self = this;
+        var clickOnly = self.options.clickOnly;
 
         // This function returns different values if alt and/or shift are
         // pressed: alt -> -1, shift -> 1, alt + shift -> 0.
@@ -2561,39 +2629,60 @@ TooltipEngine.classes.numberScrubber = TooltipBase.extend({
             return exp;
         }
 
-        var $leftButton = $("<span role='button'>◄</span>");
-        var $rightButton = $("<span role='button'>►</span>");
-        var $center = $("<span> ◆ </span>");
+        var leftArrow = clickOnly ? "-" : "◄";
+        var rightArrow = clickOnly ? "+" : "◄";
+        var center = clickOnly ? "" : " ◆ ";
 
-        $leftButton.click(function (evt) {
+        var $leftButton = $("<span role='button'>" + leftArrow + "</span>");
+        var $rightButton = $("<span role='button' class='flipped-arrow'>" + rightArrow + "</span>");
+        var $center = $("<span>" + center + "</span>");
+
+        var updateNumber = function(num, evt) {
+            var exp = evt ? getExponent(evt) : -self.decimals;
+            self.decimals = Math.max(0, -exp);
+            self.intermediateValue = self.value + (num * Math.pow(10, exp));
+            self.updateText(self.intermediateValue.toFixed(self.decimals));
+            self.updateTooltip(self.intermediateValue, self.decimals);
+        };
+
+        $leftButton.on("click touchend", function(evt) {
+            if (self.noClick) {
+                self.noClick = false;
+                return;
+            }
+
             if (!self.dragged) {
-                var exp = getExponent(evt);
-                self.decimals = Math.max(0, -exp);
-                self.intermediateValue = self.value - Math.pow(10, exp);
-                self.updateText(self.intermediateValue.toFixed(self.decimals));
-                self.updateTooltip(self.intermediateValue, self.decimals);
+                updateNumber(-1, evt);
             }
         });
 
-        $rightButton.click(function (evt) {
+        $rightButton.on("click touchend", function(evt) {
+            if (self.noClick) {
+                self.noClick = false;
+                return;
+            }
+
             if (!self.dragged) {
-                var exp = getExponent(evt);
-                self.decimals = Math.max(0, -exp);
-                self.intermediateValue = self.value + Math.pow(10, exp);
-                self.updateText(self.intermediateValue.toFixed(self.decimals));
-                self.updateTooltip(self.intermediateValue, self.decimals);
+                updateNumber(1, evt);
             }
         });
 
         var $scrubberHandle = $("<div class='scrubber-handle'/>")
-            .append($leftButton).append($center).append($rightButton)
-            .draggable({
+            .append($leftButton).append($center).append($rightButton);
+
+        if (!clickOnly) {
+            $scrubberHandle.draggable({
                 axis: "x",
-                start: function() {
-                    self.$el.addClass("dragging");
+                appendTo: "body",
+                helper: function() {
+                    return $(this).clone().css($(this).offset());
                 },
-                drag: function(evt) {
-                    var thisOffset = $(this).offset();
+                start: function(e, ui) {
+                    self.$el.addClass("dragging");
+                    $(this).css("visibility", "hidden");
+                },
+                drag: function(evt, ui) {
+                    var thisOffset = ui.helper.offset();
                     var parentOffset = $(this).parent().offset();
                     var dx = thisOffset.left - parentOffset.left;
 
@@ -2603,12 +2692,9 @@ TooltipEngine.classes.numberScrubber = TooltipBase.extend({
                     self.updateText(self.intermediateValue.toFixed(self.decimals));
                     self.dragged = true;
                 },
-                stop: function(evt) {
+                stop: function(evt, ui) {
                     self.$el.removeClass("dragging");
-                    $(this).css({
-                        left: 0,
-                        top: 0
-                    });
+                    $(this).css("visibility", "visible");
 
                     var exp = getExponent(evt);
                     self.decimals = Math.max(0,-exp);
@@ -2621,6 +2707,63 @@ TooltipEngine.classes.numberScrubber = TooltipBase.extend({
                     }, 0);
                 }
             });
+        } else {
+            var clickInterval;
+
+            var numberUpdater = function(evt, rate) {
+                var updateRate = 300;
+                var start = (new Date).getTime();
+
+                if (self.setCurValue) {
+                    self.setCurValue();
+                }
+
+                var update = function() {
+                    self.noClick = false;
+
+                    clickInterval = setTimeout(function() {
+                        self.noClick = true;
+                        updateNumber(rate, evt);
+
+                        var curTime = (new Date).getTime() - start;
+
+                        if (curTime >= 5000) {
+                            rate = (rate < 1 ? -1 : 1) * 3;
+                        } else if (curTime > 2000) {
+                            rate = (rate < 1 ? -1 : 1) * 2;
+                        }
+
+                        updateRate = 16;
+
+                        update();
+                    }, updateRate);
+                };
+
+                update();
+            };
+
+            $leftButton.on("touchstart mousedown", function(evt) {
+                numberUpdater(evt, -1);
+                $(this).addClass("active");
+                evt.preventDefault();
+            });
+
+            $leftButton.on("touchend touchleave mouseup mouseleave", function() {
+                $(this).removeClass("active");
+                clearInterval(clickInterval);
+            });
+
+            $rightButton.on("touchstart mousedown", function(evt) {
+                numberUpdater(evt, 1);
+                $(this).addClass("active");
+                evt.preventDefault();
+            });
+
+            $rightButton.on("touchend touchleave mouseup mouseleave", function() {
+                $(this).removeClass("active");
+                clearInterval(clickInterval);
+            });
+        }
 
         this.$el = $("<div class='tooltip'><div class='scrubber'></div><div class='arrow'></div></div>")
             .appendTo("body")
@@ -2628,6 +2771,10 @@ TooltipEngine.classes.numberScrubber = TooltipBase.extend({
             .append($scrubberHandle)
             .end()
             .hide();
+
+        if (clickOnly) {
+            this.$el.addClass("click-only");
+        }
     },
 
     bind: function() {
@@ -2683,11 +2830,11 @@ window.TooltipUtils = {
      * (although it is generally applicable to some degree)
      * It loads images as they are scrolled into view.
      * It makes the following assumptions
-     * - All lazy-loading images have a "data-lazy-src" with the src 
+     * - All lazy-loading images have a "data-lazy-src" with the src
      *     we wish to load on-demand
-     * - The div being scrolled is the offset parent of all the images 
+     * - The div being scrolled is the offset parent of all the images
      *     (http://api.jquery.com/position/)
-     * - If image A comes before image B in the source, 
+     * - If image A comes before image B in the source,
      *     then A is at least as high as B on the page.
      *
      */
@@ -2708,15 +2855,15 @@ window.TooltipUtils = {
                 } else {
                     return false; // break;
                 }
-            })
-        })
+            });
+        });
     },
 
     loadNow: function(img) {
         $.each($(img), function(i, elem) {
             $(elem).attr("src", $(elem).attr("data-lazy-src"));
             $(elem).removeAttr("data-lazy-src");
-        })
+        });
     },
 
     /**
@@ -2727,7 +2874,7 @@ window.TooltipUtils = {
      */
     setupScrollSpy: function(scrollables, arg) {
         $.each($(scrollables), function(i, shell) {
-            if (arg == "refresh") {
+            if (arg === "refresh") {
                 var navUl = $(shell).data("scrollspy.navUl");
                 if (!navUl) {
                     console.warn("tried to refresh scrollspy without first initializing it");
@@ -2745,31 +2892,31 @@ window.TooltipUtils = {
                 });
                 pointers.sort(function(a, b) {
                     return a[0] - b[0];
-                })
+                });
                 $(shell).data("scrollspy.pointers", pointers);
             } else {
                 var navUl = arg(shell);
                 $(shell).data("scrollspy.navUl", navUl);
-                $(shell).on("scroll", _.throttle(this.doScrollSpy, 60))
+                $(shell).on("scroll", _.throttle(this.doScrollSpy, 60));
                 $(navUl).find("li a").on("click", function(e) {
                     var top = $(shell).find($(this).attr("href")).position().top;
                     $(shell).scrollTop(top);
                     e.preventDefault();
-                })
+                });
             }
-        }.bind(this))
+        }.bind(this));
     },
 
     doScrollSpy: function() {
         var $this = $(this);
         var pointers = $this.data("scrollspy.pointers"); // [[height, node], ... ]
-        if (pointers == undefined) {
+        if (pointers === undefined) {
             $this.data("scrollspy.pointers", "working");
             setTimeout(function() {
-                TooltipUtils.setupScrollSpy($this, "refresh")
+                TooltipUtils.setupScrollSpy($this, "refresh");
             }, 0);
             return;
-        } else if (pointers == "working") {
+        } else if (pointers === "working") {
             return;
         }
 
@@ -2786,244 +2933,587 @@ window.TooltipUtils = {
         $this.data("scrollspy.navUl").find(".active").removeClass("active");
         $(active).closest("li").addClass("active");
     }
-}
+};
 this["Handlebars"] = this["Handlebars"] || {};
 this["Handlebars"]["templates"] = this["Handlebars"]["templates"] || {};
 this["Handlebars"]["templates"]["image-picker"] = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
-  this.compilerInfo = [4,'>= 1.0.0'];
-helpers = this.merge(helpers, Handlebars.helpers); data = data || {};
-  var buffer = "", stack1, helper, functionType="function", escapeExpression=this.escapeExpression, self=this;
+  helpers = helpers || Handlebars.helpers;
+  var buffer = "", stack1, stack2, foundHelper, tmp1, self=this, functionType="function", helperMissing=helpers.helperMissing, undef=void 0, escapeExpression=this.escapeExpression;
 
 function program1(depth0,data) {
   
-  var buffer = "", stack1, helper;
+  var buffer = "", stack1, stack2;
   buffer += "\n        <div class=\"image-group\">\n            <h3 class=\"image-group\">";
-  if (helper = helpers.groupName) { stack1 = helper.call(depth0, {hash:{},data:data}); }
-  else { helper = (depth0 && depth0.groupName); stack1 = typeof helper === functionType ? helper.call(depth0, {hash:{},data:data}) : helper; }
-  buffer += escapeExpression(stack1)
-    + "</h3>\n            ";
-  stack1 = helpers['if'].call(depth0, (depth0 && depth0.cite), {hash:{},inverse:self.noop,fn:self.program(2, program2, data),data:data});
+  foundHelper = helpers.groupName;
+  stack1 = foundHelper || depth0.groupName;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "groupName", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "</h3>\n            ";
+  foundHelper = helpers.cite;
+  stack1 = foundHelper || depth0.cite;
+  stack2 = helpers['if'];
+  tmp1 = self.program(2, program2, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  stack1 = stack2.call(depth0, stack1, tmp1);
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n            ";
-  stack1 = helpers.each.call(depth0, (depth0 && depth0.images), {hash:{},inverse:self.noop,fn:self.programWithDepth(4, program4, data, depth0),data:data});
+  foundHelper = helpers.images;
+  stack1 = foundHelper || depth0.images;
+  stack2 = helpers.each;
+  tmp1 = self.programWithDepth(program4, data, depth0);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  stack1 = stack2.call(depth0, stack1, tmp1);
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n        </div>\n    ";
-  return buffer;
-  }
+  return buffer;}
 function program2(depth0,data) {
   
-  var buffer = "", stack1, helper;
+  var buffer = "", stack1;
   buffer += "\n                <p><a href=\"";
-  if (helper = helpers.citeLink) { stack1 = helper.call(depth0, {hash:{},data:data}); }
-  else { helper = (depth0 && depth0.citeLink); stack1 = typeof helper === functionType ? helper.call(depth0, {hash:{},data:data}) : helper; }
-  buffer += escapeExpression(stack1)
-    + "\" target=\"_blank\">";
-  if (helper = helpers.cite) { stack1 = helper.call(depth0, {hash:{},data:data}); }
-  else { helper = (depth0 && depth0.cite); stack1 = typeof helper === functionType ? helper.call(depth0, {hash:{},data:data}) : helper; }
-  buffer += escapeExpression(stack1)
-    + "</a></p>\n            ";
-  return buffer;
-  }
+  foundHelper = helpers.citeLink;
+  stack1 = foundHelper || depth0.citeLink;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "citeLink", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "\" target=\"_blank\">";
+  foundHelper = helpers.cite;
+  stack1 = foundHelper || depth0.cite;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "cite", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "</a></p>\n            ";
+  return buffer;}
 
 function program4(depth0,data,depth1) {
   
   var buffer = "", stack1;
-  buffer += "\n            <div class=\"image\" data-path=\""
-    + escapeExpression(((stack1 = (depth1 && depth1.groupName)),typeof stack1 === functionType ? stack1.apply(depth0) : stack1))
-    + "/"
-    + escapeExpression((typeof depth0 === functionType ? depth0.apply(depth0) : depth0))
-    + "\">\n                <img src=\"/images/throbber.gif\" data-lazy-src=\""
-    + escapeExpression(((stack1 = (depth1 && depth1.imagesDir)),typeof stack1 === functionType ? stack1.apply(depth0) : stack1))
-    + escapeExpression(((stack1 = (depth1 && depth1.groupName)),typeof stack1 === functionType ? stack1.apply(depth0) : stack1))
-    + "/"
-    + escapeExpression((typeof depth0 === functionType ? depth0.apply(depth0) : depth0))
-    + ".png\"/>\n                <span class=\"name\">"
-    + escapeExpression((typeof depth0 === functionType ? depth0.apply(depth0) : depth0))
-    + "</span>\n            </div>\n            ";
-  return buffer;
-  }
+  buffer += "\n            <div class=\"image\" data-path=\"";
+  foundHelper = helpers.groupName;
+  stack1 = foundHelper || depth1.groupName;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "...groupName", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "/";
+  stack1 = depth0;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "this", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "\">\n                <img src=\"/images/throbber.gif\" data-lazy-src=\"";
+  foundHelper = helpers.imagesDir;
+  stack1 = foundHelper || depth1.imagesDir;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "...imagesDir", { hash: {} }); }
+  buffer += escapeExpression(stack1);
+  foundHelper = helpers.groupName;
+  stack1 = foundHelper || depth1.groupName;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "...groupName", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "/";
+  stack1 = depth0;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "this", { hash: {} }); }
+  buffer += escapeExpression(stack1) + ".png\"/>\n                <span class=\"name\">";
+  stack1 = depth0;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "this", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "</span>\n            </div>\n            ";
+  return buffer;}
 
   buffer += "<div class=\"current-image\"><img src=\"";
-  if (helper = helpers.imagesDir) { stack1 = helper.call(depth0, {hash:{},data:data}); }
-  else { helper = (depth0 && depth0.imagesDir); stack1 = typeof helper === functionType ? helper.call(depth0, {hash:{},data:data}) : helper; }
-  buffer += escapeExpression(stack1)
-    + "cute/Blank.png\"/></div>\n<div class=\"image-groups\">\n    <div style=\"position: relative;\">\n    ";
-  stack1 = helpers.each.call(depth0, (depth0 && depth0.groups), {hash:{},inverse:self.noop,fn:self.program(1, program1, data),data:data});
+  foundHelper = helpers.imagesDir;
+  stack1 = foundHelper || depth0.imagesDir;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "imagesDir", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "cute/Blank.png\"/></div>\n<div class=\"image-groups\">\n    <div style=\"position: relative;\">\n    ";
+  foundHelper = helpers.groups;
+  stack1 = foundHelper || depth0.groups;
+  stack2 = helpers.each;
+  tmp1 = self.program(1, program1, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  stack1 = stack2.call(depth0, stack1, tmp1);
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n    </div>\n</div>\n";
-  return buffer;
-  });;
+  return buffer;});;
 this["Handlebars"] = this["Handlebars"] || {};
 this["Handlebars"]["templates"] = this["Handlebars"]["templates"] || {};
 this["Handlebars"]["templates"]["image-modal"] = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
-  this.compilerInfo = [4,'>= 1.0.0'];
-helpers = this.merge(helpers, Handlebars.helpers); data = data || {};
-  var buffer = "", stack1, helper, options, self=this, helperMissing=helpers.helperMissing, escapeExpression=this.escapeExpression, functionType="function", blockHelperMissing=helpers.blockHelperMissing;
+  helpers = helpers || Handlebars.helpers;
+  var buffer = "", stack1, stack2, foundHelper, tmp1, self=this, functionType="function", helperMissing=helpers.helperMissing, undef=void 0, escapeExpression=this.escapeExpression, blockHelperMissing=helpers.blockHelperMissing;
 
 function program1(depth0,data) {
   
-  var buffer = "", stack1, helper, options;
+  var buffer = "", stack1, stack2;
   buffer += "\n      <li ";
-  stack1 = helpers['if'].call(depth0, (depth0 && depth0.$first), {hash:{},inverse:self.noop,fn:self.program(2, program2, data),data:data});
+  foundHelper = helpers.$first;
+  stack1 = foundHelper || depth0.$first;
+  stack2 = helpers['if'];
+  tmp1 = self.program(2, program2, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  stack1 = stack2.call(depth0, stack1, tmp1);
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "><a href=\"#im-class-"
-    + escapeExpression((helper = helpers.slugify || (depth0 && depth0.slugify),options={hash:{},data:data},helper ? helper.call(depth0, (depth0 && depth0.className), options) : helperMissing.call(depth0, "slugify", (depth0 && depth0.className), options)))
-    + "\">";
-  if (helper = helpers.className) { stack1 = helper.call(depth0, {hash:{},data:data}); }
-  else { helper = (depth0 && depth0.className); stack1 = typeof helper === functionType ? helper.call(depth0, {hash:{},data:data}) : helper; }
-  buffer += escapeExpression(stack1)
-    + "</a></li>\n    ";
-  return buffer;
-  }
+  buffer += "><a href=\"#im-class-";
+  foundHelper = helpers.className;
+  stack1 = foundHelper || depth0.className;
+  foundHelper = helpers.slugify;
+  stack2 = foundHelper || depth0.slugify;
+  if(typeof stack2 === functionType) { stack1 = stack2.call(depth0, stack1, { hash: {} }); }
+  else if(stack2=== undef) { stack1 = helperMissing.call(depth0, "slugify", stack1, { hash: {} }); }
+  else { stack1 = stack2; }
+  buffer += escapeExpression(stack1) + "\">";
+  foundHelper = helpers.className;
+  stack1 = foundHelper || depth0.className;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "className", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "</a></li>\n    ";
+  return buffer;}
 function program2(depth0,data) {
   
   
-  return "class=\"active\"";
-  }
+  return "class=\"active\"";}
 
 function program4(depth0,data,depth1) {
   
-  var buffer = "", stack1, helper, options;
+  var buffer = "", stack1, stack2;
   buffer += "\n      <div class=\"tab-pane ";
-  stack1 = helpers['if'].call(depth0, (depth0 && depth0.$first), {hash:{},inverse:self.noop,fn:self.program(5, program5, data),data:data});
+  foundHelper = helpers.$first;
+  stack1 = foundHelper || depth0.$first;
+  stack2 = helpers['if'];
+  tmp1 = self.program(5, program5, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  stack1 = stack2.call(depth0, stack1, tmp1);
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\" id=\"im-class-"
-    + escapeExpression((helper = helpers.slugify || (depth0 && depth0.slugify),options={hash:{},data:data},helper ? helper.call(depth0, (depth0 && depth0.className), options) : helperMissing.call(depth0, "slugify", (depth0 && depth0.className), options)))
-    + "\">\n        <div class=\"imagemodal-content\">\n        <div style=\"position: relative;\">\n        ";
-  stack1 = helpers.each.call(depth0, (depth0 && depth0.groups), {hash:{},inverse:self.noop,fn:self.programWithDepth(7, program7, data, depth1),data:data});
+  buffer += "\" id=\"im-class-";
+  foundHelper = helpers.className;
+  stack1 = foundHelper || depth0.className;
+  foundHelper = helpers.slugify;
+  stack2 = foundHelper || depth0.slugify;
+  if(typeof stack2 === functionType) { stack1 = stack2.call(depth0, stack1, { hash: {} }); }
+  else if(stack2=== undef) { stack1 = helperMissing.call(depth0, "slugify", stack1, { hash: {} }); }
+  else { stack1 = stack2; }
+  buffer += escapeExpression(stack1) + "\">\n        <div class=\"imagemodal-content\">\n        <div style=\"position: relative;\">\n        ";
+  foundHelper = helpers.groups;
+  stack1 = foundHelper || depth0.groups;
+  stack2 = helpers.each;
+  tmp1 = self.programWithDepth(program7, data, depth0, depth1);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  stack1 = stack2.call(depth0, stack1, tmp1);
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\n        </div>\n        </div>\n\n        <div class=\"right\">\n        <ul class=\"nav nav-pills nav-stackable\">\n        ";
-  stack1 = (helper = helpers.patchedEach || (depth0 && depth0.patchedEach),options={hash:{},inverse:self.noop,fn:self.program(12, program12, data),data:data},helper ? helper.call(depth0, (depth0 && depth0.groups), options) : helperMissing.call(depth0, "patchedEach", (depth0 && depth0.groups), options));
+  buffer += "\n        </div>\n        </div>\n\n        <div class=\"right\">\n        ";
+  foundHelper = helpers.groups;
+  stack1 = foundHelper || depth0.groups;
+  foundHelper = helpers.hasMultipleItems;
+  stack2 = foundHelper || depth0.hasMultipleItems;
+  tmp1 = self.program(14, program14, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  if(foundHelper && typeof stack2 === functionType) { stack1 = stack2.call(depth0, stack1, tmp1); }
+  else { stack1 = blockHelperMissing.call(depth0, stack2, stack1, tmp1); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\n        </ul>\n        </div>\n\n        <div style=\"clear: both;\"></div>\n      </div>\n    ";
-  return buffer;
-  }
+  buffer += "\n        </div>\n\n        <div style=\"clear: both;\"></div>\n      </div>\n    ";
+  return buffer;}
 function program5(depth0,data) {
   
   
-  return "active";
-  }
+  return "active";}
 
-function program7(depth0,data,depth2) {
+function program7(depth0,data,depth1,depth2) {
   
-  var buffer = "", stack1, helper, options;
-  buffer += "\n            <div class=\"image-group\">\n                <h3 class=\"image-group\" id=\"im-group-"
-    + escapeExpression((helper = helpers.slugify || (depth0 && depth0.slugify),options={hash:{},data:data},helper ? helper.call(depth0, (depth0 && depth0.groupName), options) : helperMissing.call(depth0, "slugify", (depth0 && depth0.groupName), options)))
-    + "\">";
-  if (helper = helpers.groupName) { stack1 = helper.call(depth0, {hash:{},data:data}); }
-  else { helper = (depth0 && depth0.groupName); stack1 = typeof helper === functionType ? helper.call(depth0, {hash:{},data:data}) : helper; }
-  buffer += escapeExpression(stack1)
-    + "</h3>\n                ";
-  stack1 = helpers['if'].call(depth0, (depth0 && depth0.cite), {hash:{},inverse:self.noop,fn:self.program(8, program8, data),data:data});
+  var buffer = "", stack1, stack2;
+  buffer += "\n            <div class=\"image-group\">\n                ";
+  foundHelper = helpers.groups;
+  stack1 = foundHelper || depth1.groups;
+  foundHelper = helpers.hasMultipleItems;
+  stack2 = foundHelper || depth0.hasMultipleItems;
+  tmp1 = self.program(8, program8, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  if(foundHelper && typeof stack2 === functionType) { stack1 = stack2.call(depth0, stack1, tmp1); }
+  else { stack1 = blockHelperMissing.call(depth0, stack2, stack1, tmp1); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n                ";
-  stack1 = helpers.each.call(depth0, (depth0 && depth0.images), {hash:{},inverse:self.noop,fn:self.programWithDepth(10, program10, data, depth0, depth2),data:data});
+  foundHelper = helpers.cite;
+  stack1 = foundHelper || depth0.cite;
+  stack2 = helpers['if'];
+  tmp1 = self.program(10, program10, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  stack1 = stack2.call(depth0, stack1, tmp1);
+  if(stack1 || stack1 === 0) { buffer += stack1; }
+  buffer += "\n                ";
+  foundHelper = helpers.images;
+  stack1 = foundHelper || depth0.images;
+  stack2 = helpers.each;
+  tmp1 = self.programWithDepth(program12, data, depth0, depth2);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  stack1 = stack2.call(depth0, stack1, tmp1);
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n            </div>\n        ";
-  return buffer;
-  }
+  return buffer;}
 function program8(depth0,data) {
   
-  var buffer = "", stack1, helper;
-  buffer += "\n                    <p><a href=\"";
-  if (helper = helpers.citeLink) { stack1 = helper.call(depth0, {hash:{},data:data}); }
-  else { helper = (depth0 && depth0.citeLink); stack1 = typeof helper === functionType ? helper.call(depth0, {hash:{},data:data}) : helper; }
-  buffer += escapeExpression(stack1)
-    + "\" target=\"_blank\">";
-  if (helper = helpers.cite) { stack1 = helper.call(depth0, {hash:{},data:data}); }
-  else { helper = (depth0 && depth0.cite); stack1 = typeof helper === functionType ? helper.call(depth0, {hash:{},data:data}) : helper; }
-  buffer += escapeExpression(stack1)
-    + "</a></p>\n                ";
-  return buffer;
-  }
+  var buffer = "", stack1, stack2;
+  buffer += "\n                <h3 class=\"image-group\" id=\"im-group-";
+  foundHelper = helpers.groupName;
+  stack1 = foundHelper || depth0.groupName;
+  foundHelper = helpers.slugify;
+  stack2 = foundHelper || depth0.slugify;
+  if(typeof stack2 === functionType) { stack1 = stack2.call(depth0, stack1, { hash: {} }); }
+  else if(stack2=== undef) { stack1 = helperMissing.call(depth0, "slugify", stack1, { hash: {} }); }
+  else { stack1 = stack2; }
+  buffer += escapeExpression(stack1) + "\">";
+  foundHelper = helpers.groupName;
+  stack1 = foundHelper || depth0.groupName;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "groupName", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "</h3>\n                ";
+  return buffer;}
 
-function program10(depth0,data,depth1,depth3) {
+function program10(depth0,data) {
   
   var buffer = "", stack1;
-  buffer += "\n                <div class=\"image\" data-path=\""
-    + escapeExpression(((stack1 = (depth1 && depth1.groupName)),typeof stack1 === functionType ? stack1.apply(depth0) : stack1))
-    + "/"
-    + escapeExpression((typeof depth0 === functionType ? depth0.apply(depth0) : depth0))
-    + "\">\n                    <div class=\"thumb-shell\"><img src=\"/images/throbber.gif\" data-lazy-src=\""
-    + escapeExpression(((stack1 = (depth3 && depth3.imagesDir)),typeof stack1 === functionType ? stack1.apply(depth0) : stack1))
-    + escapeExpression(((stack1 = (depth1 && depth1.groupName)),typeof stack1 === functionType ? stack1.apply(depth0) : stack1))
-    + escapeExpression(((stack1 = (depth1 && depth1.thumbsDir)),typeof stack1 === functionType ? stack1.apply(depth0) : stack1))
-    + "/"
-    + escapeExpression((typeof depth0 === functionType ? depth0.apply(depth0) : depth0))
-    + ".png\"/></div>\n                    <span class=\"name\">"
-    + escapeExpression((typeof depth0 === functionType ? depth0.apply(depth0) : depth0))
-    + "</span>\n                </div>\n                ";
-  return buffer;
-  }
+  buffer += "\n                    <p><a href=\"";
+  foundHelper = helpers.citeLink;
+  stack1 = foundHelper || depth0.citeLink;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "citeLink", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "\" target=\"_blank\">";
+  foundHelper = helpers.cite;
+  stack1 = foundHelper || depth0.cite;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "cite", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "</a></p>\n                ";
+  return buffer;}
 
-function program12(depth0,data) {
+function program12(depth0,data,depth1,depth3) {
   
-  var buffer = "", stack1, helper, options;
-  buffer += "\n            <li ";
-  stack1 = helpers['if'].call(depth0, (depth0 && depth0.$first), {hash:{},inverse:self.noop,fn:self.program(2, program2, data),data:data});
-  if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "><a href=\"#im-group-"
-    + escapeExpression((helper = helpers.slugify || (depth0 && depth0.slugify),options={hash:{},data:data},helper ? helper.call(depth0, (depth0 && depth0.groupName), options) : helperMissing.call(depth0, "slugify", (depth0 && depth0.groupName), options)))
-    + "\">";
-  if (helper = helpers.groupName) { stack1 = helper.call(depth0, {hash:{},data:data}); }
-  else { helper = (depth0 && depth0.groupName); stack1 = typeof helper === functionType ? helper.call(depth0, {hash:{},data:data}) : helper; }
-  buffer += escapeExpression(stack1)
-    + "</a></li>\n        ";
-  return buffer;
-  }
+  var buffer = "", stack1;
+  buffer += "\n                <div class=\"image\" data-path=\"";
+  foundHelper = helpers.groupName;
+  stack1 = foundHelper || depth1.groupName;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "...groupName", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "/";
+  stack1 = depth0;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "this", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "\">\n                    <div class=\"thumb-shell\"><img src=\"/images/throbber.gif\" data-lazy-src=\"";
+  foundHelper = helpers.imagesDir;
+  stack1 = foundHelper || depth3.imagesDir;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, ".........imagesDir", { hash: {} }); }
+  buffer += escapeExpression(stack1);
+  foundHelper = helpers.groupName;
+  stack1 = foundHelper || depth1.groupName;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "...groupName", { hash: {} }); }
+  buffer += escapeExpression(stack1);
+  foundHelper = helpers.thumbsDir;
+  stack1 = foundHelper || depth1.thumbsDir;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "...thumbsDir", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "/";
+  stack1 = depth0;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "this", { hash: {} }); }
+  buffer += escapeExpression(stack1) + ".png\"/></div>\n                    <span class=\"name\">";
+  stack1 = depth0;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "this", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "</span>\n                </div>\n                ";
+  return buffer;}
 
 function program14(depth0,data) {
   
+  var buffer = "", stack1, stack2;
+  buffer += "\n        <ul class=\"nav nav-pills nav-stackable\">\n        ";
+  foundHelper = helpers.groups;
+  stack1 = foundHelper || depth0.groups;
+  foundHelper = helpers.patchedEach;
+  stack2 = foundHelper || depth0.patchedEach;
+  tmp1 = self.program(15, program15, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  if(foundHelper && typeof stack2 === functionType) { stack1 = stack2.call(depth0, stack1, tmp1); }
+  else { stack1 = blockHelperMissing.call(depth0, stack2, stack1, tmp1); }
+  if(stack1 || stack1 === 0) { buffer += stack1; }
+  buffer += "\n        </ul>\n        ";
+  return buffer;}
+function program15(depth0,data) {
   
-  return "Close";
-  }
-
+  var buffer = "", stack1, stack2;
+  buffer += "\n            <li ";
+  foundHelper = helpers.$first;
+  stack1 = foundHelper || depth0.$first;
+  stack2 = helpers['if'];
+  tmp1 = self.program(16, program16, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  stack1 = stack2.call(depth0, stack1, tmp1);
+  if(stack1 || stack1 === 0) { buffer += stack1; }
+  buffer += "><a href=\"#im-group-";
+  foundHelper = helpers.groupName;
+  stack1 = foundHelper || depth0.groupName;
+  foundHelper = helpers.slugify;
+  stack2 = foundHelper || depth0.slugify;
+  if(typeof stack2 === functionType) { stack1 = stack2.call(depth0, stack1, { hash: {} }); }
+  else if(stack2=== undef) { stack1 = helperMissing.call(depth0, "slugify", stack1, { hash: {} }); }
+  else { stack1 = stack2; }
+  buffer += escapeExpression(stack1) + "\">";
+  foundHelper = helpers.groupName;
+  stack1 = foundHelper || depth0.groupName;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "groupName", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "</a></li>\n        ";
+  return buffer;}
 function program16(depth0,data) {
   
   
-  return "Ok";
-  }
+  return "class=\"active\"";}
+
+function program18(depth0,data) {
+  
+  
+  return "Close";}
+
+function program20(depth0,data) {
+  
+  
+  return "Ok";}
 
   buffer += "<div class=\"modal imagemodal\">\n    <ul class=\"nav nav-tabs\" role=\"tablist\">\n    ";
-  stack1 = (helper = helpers.patchedEach || (depth0 && depth0.patchedEach),options={hash:{},inverse:self.noop,fn:self.program(1, program1, data),data:data},helper ? helper.call(depth0, (depth0 && depth0.classes), options) : helperMissing.call(depth0, "patchedEach", (depth0 && depth0.classes), options));
+  foundHelper = helpers.classes;
+  stack1 = foundHelper || depth0.classes;
+  foundHelper = helpers.patchedEach;
+  stack2 = foundHelper || depth0.patchedEach;
+  tmp1 = self.program(1, program1, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  if(foundHelper && typeof stack2 === functionType) { stack1 = stack2.call(depth0, stack1, tmp1); }
+  else { stack1 = blockHelperMissing.call(depth0, stack2, stack1, tmp1); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n    </ul>\n\n    <div class=\"tab-content\">\n    ";
-  stack1 = (helper = helpers.patchedEach || (depth0 && depth0.patchedEach),options={hash:{},inverse:self.noop,fn:self.programWithDepth(4, program4, data, depth0),data:data},helper ? helper.call(depth0, (depth0 && depth0.classes), options) : helperMissing.call(depth0, "patchedEach", (depth0 && depth0.classes), options));
+  foundHelper = helpers.classes;
+  stack1 = foundHelper || depth0.classes;
+  foundHelper = helpers.patchedEach;
+  stack2 = foundHelper || depth0.patchedEach;
+  tmp1 = self.programWithDepth(program4, data, depth0);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  if(foundHelper && typeof stack2 === functionType) { stack1 = stack2.call(depth0, stack1, tmp1); }
+  else { stack1 = blockHelperMissing.call(depth0, stack2, stack1, tmp1); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n    </div>\n\n    <div class=\"imagemodal-footer\">\n      <button type=\"button\" class=\"simple-button\" data-dismiss=\"modal\">";
-  options={hash:{},inverse:self.noop,fn:self.program(14, program14, data),data:data}
-  if (helper = helpers._) { stack1 = helper.call(depth0, options); }
-  else { helper = (depth0 && depth0._); stack1 = typeof helper === functionType ? helper.call(depth0, options) : helper; }
-  if (!helpers._) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(14, program14, data),data:data}); }
+  foundHelper = helpers['_'];
+  stack1 = foundHelper || depth0['_'];
+  tmp1 = self.program(18, program18, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
+  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "</button>\n      <button type=\"button\" class=\"simple-button green imagemodal-submit\" data-dismiss=\"modal\">";
-  options={hash:{},inverse:self.noop,fn:self.program(16, program16, data),data:data}
-  if (helper = helpers._) { stack1 = helper.call(depth0, options); }
-  else { helper = (depth0 && depth0._); stack1 = typeof helper === functionType ? helper.call(depth0, options) : helper; }
-  if (!helpers._) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(16, program16, data),data:data}); }
+  foundHelper = helpers['_'];
+  stack1 = foundHelper || depth0['_'];
+  tmp1 = self.program(20, program20, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
+  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "</button>\n    </div>\n</div>";
-  return buffer;
-  });;
+  return buffer;});;
 this["Handlebars"] = this["Handlebars"] || {};
 this["Handlebars"]["templates"] = this["Handlebars"]["templates"] || {};
 this["Handlebars"]["templates"]["image-modal-preview"] = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
-  this.compilerInfo = [4,'>= 1.0.0'];
-helpers = this.merge(helpers, Handlebars.helpers); data = data || {};
-  var buffer = "", stack1, helper, options, self=this, functionType="function", blockHelperMissing=helpers.blockHelperMissing;
+  helpers = helpers || Handlebars.helpers;
+  var buffer = "", stack1, foundHelper, tmp1, self=this, functionType="function", blockHelperMissing=helpers.blockHelperMissing;
 
 function program1(depth0,data) {
   
   
-  return "Pick Image:";
-  }
+  return "Pick Image:";}
 
   buffer += "<div class=\"tooltip imagemodal-preview\">\n	<div class=\"content\">\n		<img src=\"/images/throbber.gif\" class=\"thumb-throbber\" />\n		<div class=\"thumb-shell\"><img class=\"thumb\" /><div class=\"thumb-error\"></div></div> \n		<button class=\"kui-button kui-button-submit kui-button-primary\" style=\"padding: 5px; width: 100%; margin: 0 auto;\" >\n			";
-  options={hash:{},inverse:self.noop,fn:self.program(1, program1, data),data:data}
-  if (helper = helpers._) { stack1 = helper.call(depth0, options); }
-  else { helper = (depth0 && depth0._); stack1 = typeof helper === functionType ? helper.call(depth0, options) : helper; }
-  if (!helpers._) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(1, program1, data),data:data}); }
+  foundHelper = helpers['_'];
+  stack1 = foundHelper || depth0['_'];
+  tmp1 = self.program(1, program1, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
+  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n		</button> \n	</div>\n	<div class=\"arrow\"></div>\n</div>";
-  return buffer;
-  });;
+  return buffer;});;
+(function() {
+    var ESC = 27;
+
+    window.StructuredBlocksTooltips = Backbone.View.extend({
+        events: {
+            "mousedown .block-rgb.block-name-r": "showColorPicker",
+            "touchstart .block-rgb.block-name-r": "showColorPicker",
+            "focusin .block-rgb.block-name-r": "showColorPicker",
+            "mousedown .block-number .input": "showNumberScrubber",
+            "touchstart .block-number .input": "showNumberScrubber",
+            "focusin .block-number .input": "showNumberScrubber"
+        },
+
+        initialize: function() {
+            this.render();
+            this.bind();
+        },
+
+        render: function() {
+            this.$colorPicker = $("<div class='tooltip picker active'>" +
+                "<div class='picker'></div>" +
+                "<div class='arrow'></div></div>")
+                // Prevent dragging
+                .on("mousedown", function() {
+                    return false;
+                })
+                .find(".picker")
+                    .ColorPicker({flat: true})
+                .end()
+                .hide();
+
+            this.colorPicker = this.$colorPicker.find(".colorpicker")
+                .data("colorpicker");
+
+            this.numberScrubber = new TooltipEngine.classes.numberScrubber({
+                clickOnly: true
+            });
+        },
+
+        bind: function() {
+            $(window).on("mousedown touchstart", function(e) {
+                var target = e.target;
+                var $target = $(target);
+
+                var colorPicker = this.$colorPicker[0];
+                var numberScrubber = this.numberScrubber.$el[0];
+
+                if ($target.hasClass("input")) {
+                    target = target.parentNode;
+                } else if ($target.hasClass("block-name-r")) {
+                    target = $target.closest(".block-statement")[0];
+                } else {
+                    if (!$.contains(colorPicker, target)) {
+                        this.hideColorPicker();
+                    }
+
+                    if (!$.contains(numberScrubber, target)) {
+                        this.hideNumberScrubber();
+                    }
+
+                    return;
+                }
+
+                if (!$.contains(target, colorPicker)) {
+                    this.hideColorPicker();
+                }
+
+                if (!$.contains(target, numberScrubber)) {
+                    this.hideNumberScrubber();
+                }
+            }.bind(this));
+
+            $(window).on("keydown", function(e) {
+                if (e.which === ESC) {
+                    this.hideColorPicker();
+                    this.hideNumberScrubber();
+                }
+            }.bind(this));
+        },
+
+        showColorPicker: function(e) {
+            var $target = $(e.currentTarget);
+            var $block = $target.closest(".block-statement");
+            var pos = $target.position();
+            var $offsetParent = $target.offsetParent();
+
+            this.colorPicker.onChange = function(hsb, hex, rgb) {
+                $block.trigger("updateColor", rgb);
+            };
+
+            this.$colorPicker
+                .appendTo($block)
+                .css({
+                    top: pos.top + 5 + $offsetParent[0].scrollTop,
+                    left: pos.left + $target.width() + 5 +
+                        $offsetParent[0].scrollLeft
+                })
+                .find(".picker")
+                    .ColorPickerSetColor($block.data("color"))
+                .end()
+                .show();
+        },
+
+        hideColorPicker: function() {
+            this.colorPicker.onChange = function() {};
+            this.$colorPicker
+                .appendTo("body")
+                .hide();
+        },
+
+        showNumberScrubber: function(e) {
+            var $target = $(e.target);
+            var $block = $target.closest(".block-number");
+            var pos = $target.position();
+            var $offsetParent = $target.offsetParent();
+
+            this.numberScrubber.updateText = function(val) {
+                $block.trigger("updateValue", val);
+                updateScrubberPos();
+            }.bind(this);
+
+            this.numberScrubber.setCurValue = function(val) {
+                this.numberScrubber.updateTooltip(
+                    parseFloat($block.data("value")), 0);
+            }.bind(this);
+
+            var updateScrubberPos = function() {
+                this.numberScrubber.$el.css({
+                    top: pos.top + $target.outerHeight() +
+                        $offsetParent[0].scrollTop,
+                    left: pos.left + Math.round($target.width() / 2) +
+                        $offsetParent[0].scrollLeft
+                });
+            }.bind(this);
+
+            this.numberScrubber.updateTooltip(
+                parseFloat($block.data("value")), 0);
+
+            this.numberScrubber.$el
+                .appendTo($block)
+                .show();
+
+            updateScrubberPos();
+        },
+
+        hideNumberScrubber: function() {
+            this.numberScrubber.updateText = function() {};
+            this.numberScrubber.$el
+                .appendTo("body")
+                .hide();
+        }
+    });
+})();

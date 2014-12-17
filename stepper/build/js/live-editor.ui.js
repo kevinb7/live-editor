@@ -1,119 +1,287 @@
 this["Handlebars"] = this["Handlebars"] || {};
 this["Handlebars"]["templates"] = this["Handlebars"]["templates"] || {};
-this["Handlebars"]["templates"]["live-editor"] = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
-  this.compilerInfo = [4,'>= 1.0.0'];
-helpers = this.merge(helpers, Handlebars.helpers); data = data || {};
-  var buffer = "", stack1, helper, options, functionType="function", escapeExpression=this.escapeExpression, self=this, blockHelperMissing=helpers.blockHelperMissing;
+this["Handlebars"]["templates"]["tipbar"] = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
+  helpers = helpers || Handlebars.helpers;
+  var buffer = "", stack1, foundHelper, tmp1, self=this, functionType="function", blockHelperMissing=helpers.blockHelperMissing;
 
 function program1(depth0,data) {
   
   
-  return "Loading...";
-  }
+  return "Oh noes!";}
 
 function program3(depth0,data) {
   
   
-  return "Restart";
-  }
+  return "Show me where";}
+
+  buffer += "<div class=\"tipbar\">\n    <div class=\"speech-arrow\"></div>\n    <div class=\"error-buddy\"></div>\n    <div class=\"tipnav\">\n        <a href=\"\" class=\"prev\"><span class=\"ui-icon ui-icon-circle-triangle-w\"></span></a>\n        <span class=\"current-pos\"></span>\n        <a href=\"\" class=\"next\"><span class=\"ui-icon ui-icon-circle-triangle-e\"></span></a>\n    </div>\n    <div class=\"text-wrap\">\n        <div class=\"oh-no\">";
+  foundHelper = helpers['_'];
+  stack1 = foundHelper || depth0['_'];
+  tmp1 = self.program(1, program1, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
+  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
+  if(stack1 || stack1 === 0) { buffer += stack1; }
+  buffer += "</div>\n        <div class=\"message\"></div>\n        <div class=\"show-me\"><a href>";
+  foundHelper = helpers['_'];
+  stack1 = foundHelper || depth0['_'];
+  tmp1 = self.program(3, program3, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
+  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
+  if(stack1 || stack1 === 0) { buffer += stack1; }
+  buffer += "</a></div>\n    </div>\n</div>";
+  return buffer;});;
+/**
+ * This is called tipbar for historical reasons.
+ * Originally, it appeared as a red bar sliding up from the bottom of the
+ * canvas. Now it just powers the error reporting mechanism, which no longer
+ * looks like a bar
+ */
+
+window.TipBar = Backbone.View.extend({
+    initialize: function(options) {
+        this.liveEditor = options.liveEditor;
+        this.pos = 0;
+        this.texts = [];
+        this.render();
+        this.bind();
+    },
+
+    render: function() {
+        this.$overlay = $("<div class=\"overlay error-overlay\" style=\"display: none\"></div>").appendTo(this.$el);
+        this.$el.append(Handlebars.templates["tipbar"]());
+    },
+
+    bind: function() {
+        var self = this;
+
+        this.$el.on("click", ".tipbar .tipnav a", function(e) {
+            if (!$(this).hasClass("ui-state-disabled")) {
+                self.pos += $(this).hasClass("next") ? 1 : -1;
+                self.show();
+            }
+
+            self.liveEditor.editor.focus();
+
+            return false;
+        });
+
+        this.$el.on("click", ".tipbar .text-wrap a", function(e) {
+            var error = self.texts[self.pos];
+
+            self.liveEditor.editor.setCursor(error);
+            self.liveEditor.editor.setErrorHighlight(true);
+
+            return false;
+        });
+    },
+
+    show: function(texts) {
+        if (texts) {
+            this.pos = 0;
+            this.texts = texts;
+        } else {
+            texts = this.texts;
+        }
+
+
+        var pos = this.pos;
+        var bar = this.$el.find(".tipbar");
+
+        // Inject current text
+        bar
+            .find(".current-pos").text(texts.length > 1 ? (pos + 1) + "/" + texts.length : "").end()
+            .find(".message").html(texts[pos].text || texts[pos] || "").end()
+            .find("a.prev").toggleClass("ui-state-disabled", pos === 0).end()
+            .find("a.next").toggleClass("ui-state-disabled", pos + 1 === texts.length).end();
+
+        this.$el.find(".show-me").toggle(texts[pos].row !== -1);
+
+        bar.find(".tipnav").toggle(texts.length > 1);
+
+        bar.show();
+    },
+
+    hide: function() {
+        var bar = this.$el.find(".tipbar");
+        bar.hide();
+        clearTimeout(this.errorDelay);
+    },
+
+    toggleErrors: function(errors) {
+        var hasErrors = !!errors.length;
+
+        this.$overlay.toggle(hasErrors);
+
+        if (!hasErrors) {
+            this.hide();
+            return;
+        }
+
+        clearTimeout(this.errorDelay);
+        this.errorDelay = setTimeout( function() {
+            this.show(errors);
+        }.bind(this), 1500);
+    }
+});
+this["Handlebars"] = this["Handlebars"] || {};
+this["Handlebars"]["templates"] = this["Handlebars"]["templates"] || {};
+this["Handlebars"]["templates"]["live-editor"] = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
+  helpers = helpers || Handlebars.helpers;
+  var buffer = "", stack1, stack2, foundHelper, tmp1, self=this, functionType="function", helperMissing=helpers.helperMissing, undef=void 0, escapeExpression=this.escapeExpression, blockHelperMissing=helpers.blockHelperMissing;
+
+function program1(depth0,data) {
+  
+  
+  return "Loading...";}
+
+function program3(depth0,data) {
+  
+  
+  return "Restart";}
 
 function program5(depth0,data) {
   
-  var buffer = "";
-  buffer += "\n                <a href=\"\" class=\"draw-color-button\" id=\""
-    + escapeExpression((typeof depth0 === functionType ? depth0.apply(depth0) : depth0))
-    + "\">\n                    <span></span>\n                </a>\n                ";
-  return buffer;
-  }
+  var buffer = "", stack1;
+  buffer += "\n                <a href=\"\" class=\"draw-color-button\" id=\"";
+  stack1 = depth0;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "this", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "\">\n                    <span></span>\n                </a>\n                ";
+  return buffer;}
 
 function program7(depth0,data) {
   
   
-  return "Record";
-  }
+  return "Record";}
 
 function program9(depth0,data) {
   
   
-  return "Enable Flash to load audio:";
-  }
+  return "Loading...";}
 
 function program11(depth0,data) {
   
   
-  return "Play";
-  }
+  return "Enable Flash to load audio:";}
 
 function program13(depth0,data) {
   
   
-  return "Loading audio...";
-  }
+  return "Play";}
+
+function program15(depth0,data) {
+  
+  
+  return "Loading audio...";}
 
   buffer += "<div class=\"scratchpad-wrap\">\n    <!-- Canvases (Drawing + Output) -->\n    <div class=\"scratchpad-canvas-wrap\">\n        <div id=\"output\">\n            <!-- Extra data-src attribute to work around\n                 cross-origin access policies. -->\n            <iframe id=\"output-frame\"\n                src=\"";
-  if (helper = helpers.execFile) { stack1 = helper.call(depth0, {hash:{},data:data}); }
-  else { helper = (depth0 && depth0.execFile); stack1 = typeof helper === functionType ? helper.call(depth0, {hash:{},data:data}) : helper; }
-  buffer += escapeExpression(stack1)
-    + "\"\n                data-src=\"";
-  if (helper = helpers.execFile) { stack1 = helper.call(depth0, {hash:{},data:data}); }
-  else { helper = (depth0 && depth0.execFile); stack1 = typeof helper === functionType ? helper.call(depth0, {hash:{},data:data}) : helper; }
-  buffer += escapeExpression(stack1)
-    + "\"></iframe>\n            <canvas class=\"scratchpad-draw-canvas\" style=\"display:none;\"\n                width=\"400\" height=\"400\"></canvas>\n\n            <div class=\"overlay disable-overlay\" style=\"display:none;\">\n            </div>\n\n            <div class=\"scratchpad-canvas-loading\">\n                <img src=\"";
-  if (helper = helpers.imagesDir) { stack1 = helper.call(depth0, {hash:{},data:data}); }
-  else { helper = (depth0 && depth0.imagesDir); stack1 = typeof helper === functionType ? helper.call(depth0, {hash:{},data:data}) : helper; }
-  buffer += escapeExpression(stack1)
-    + "/throbber-full.gif\">\n                <span class=\"hide-text\">";
-  options={hash:{},inverse:self.noop,fn:self.program(1, program1, data),data:data}
-  if (helper = helpers._) { stack1 = helper.call(depth0, options); }
-  else { helper = (depth0 && depth0._); stack1 = typeof helper === functionType ? helper.call(depth0, options) : helper; }
-  if (!helpers._) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(1, program1, data),data:data}); }
+  foundHelper = helpers.execFile;
+  stack1 = foundHelper || depth0.execFile;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "execFile", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "\"\n                data-src=\"";
+  foundHelper = helpers.execFile;
+  stack1 = foundHelper || depth0.execFile;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "execFile", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "\"></iframe>\n            <canvas class=\"scratchpad-draw-canvas\" style=\"display:none;\"\n                width=\"400\" height=\"400\"></canvas>\n\n            <div class=\"overlay disable-overlay\" style=\"display:none;\">\n            </div>\n\n            <div class=\"scratchpad-canvas-loading\">\n                <img src=\"";
+  foundHelper = helpers.imagesDir;
+  stack1 = foundHelper || depth0.imagesDir;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "imagesDir", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "/throbber-full.gif\">\n                <span class=\"hide-text\">";
+  foundHelper = helpers['_'];
+  stack1 = foundHelper || depth0['_'];
+  tmp1 = self.program(1, program1, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
+  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "</span>\n            </div>\n        </div>\n\n        <div class=\"scratchpad-toolbar\">\n            <button id=\"restart-code\"\n                class=\"simple-button pull-right\">\n                <span class=\"icon-refresh\"></span>\n                ";
-  options={hash:{},inverse:self.noop,fn:self.program(3, program3, data),data:data}
-  if (helper = helpers._) { stack1 = helper.call(depth0, options); }
-  else { helper = (depth0 && depth0._); stack1 = typeof helper === functionType ? helper.call(depth0, options) : helper; }
-  if (!helpers._) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(3, program3, data),data:data}); }
+  foundHelper = helpers['_'];
+  stack1 = foundHelper || depth0['_'];
+  tmp1 = self.program(3, program3, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
+  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "</button>\n\n            <!-- Widgets for selecting colors to doodle on the canvas during\n                recordings -->\n            <div id=\"draw-widgets\" style=\"display:none;\">\n                <a href=\"\" id=\"draw-clear-button\" class=\"ui-button\">\n                    <span class=\"ui-icon-cancel\"></span>\n                </a>\n                ";
-  stack1 = helpers.each.call(depth0, (depth0 && depth0.colors), {hash:{},inverse:self.noop,fn:self.program(5, program5, data),data:data});
+  foundHelper = helpers.colors;
+  stack1 = foundHelper || depth0.colors;
+  stack2 = helpers.each;
+  tmp1 = self.program(5, program5, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  stack1 = stack2.call(depth0, stack1, tmp1);
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n            </div>\n\n            <!-- Record button -->\n            <button id=\"record\" class=\"simple-button pull-left\" style=\"display:none;\">";
-  options={hash:{},inverse:self.noop,fn:self.program(7, program7, data),data:data}
-  if (helper = helpers._) { stack1 = helper.call(depth0, options); }
-  else { helper = (depth0 && depth0._); stack1 = typeof helper === functionType ? helper.call(depth0, options) : helper; }
-  if (!helpers._) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(7, program7, data),data:data}); }
+  foundHelper = helpers['_'];
+  stack1 = foundHelper || depth0['_'];
+  tmp1 = self.program(7, program7, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
+  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "</button>\n        </div>\n    </div>\n\n    <!-- Editor -->\n    <div class=\"scratchpad-editor-wrap overlay-container\">\n        <div class=\"scratchpad-editor-tabs\">\n          <div id=\"scratchpad-code-editor-tab\" class=\"scratchpad-editor-tab\">\n            <div class=\"scratchpad-editor scratchpad-ace-editor\"></div>\n            <div class=\"overlay disable-overlay\" style=\"display:none;\">\n            </div>\n\n            <div class=\"scratchpad-editor-bigplay-loading\" style=\"display:none;\">\n                <img src=\"";
-  if (helper = helpers.imagesDir) { stack1 = helper.call(depth0, {hash:{},data:data}); }
-  else { helper = (depth0 && depth0.imagesDir); stack1 = typeof helper === functionType ? helper.call(depth0, {hash:{},data:data}) : helper; }
-  buffer += escapeExpression(stack1)
-    + "/throbber-full.gif\">\n                <span class=\"hide-text\">";
-  options={hash:{},inverse:self.noop,fn:self.program(1, program1, data),data:data}
-  if (helper = helpers._) { stack1 = helper.call(depth0, options); }
-  else { helper = (depth0 && depth0._); stack1 = typeof helper === functionType ? helper.call(depth0, options) : helper; }
-  if (!helpers._) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(1, program1, data),data:data}); }
+  foundHelper = helpers.imagesDir;
+  stack1 = foundHelper || depth0.imagesDir;
+  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
+  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "imagesDir", { hash: {} }); }
+  buffer += escapeExpression(stack1) + "/throbber-full.gif\">\n                <span class=\"hide-text\">";
+  foundHelper = helpers['_'];
+  stack1 = foundHelper || depth0['_'];
+  tmp1 = self.program(9, program9, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
+  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "</span>\n            </div>\n\n            <!-- This cannot be removed, if we want Flash to keep working! -->\n            <div id=\"sm2-container\">\n                ";
-  options={hash:{},inverse:self.noop,fn:self.program(9, program9, data),data:data}
-  if (helper = helpers._) { stack1 = helper.call(depth0, options); }
-  else { helper = (depth0 && depth0._); stack1 = typeof helper === functionType ? helper.call(depth0, options) : helper; }
-  if (!helpers._) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(9, program9, data),data:data}); }
+  foundHelper = helpers['_'];
+  stack1 = foundHelper || depth0['_'];
+  tmp1 = self.program(11, program11, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
+  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n                <br>\n            </div>\n\n            <button class=\"scratchpad-editor-bigplay-button\" style=\"display:none;\">\n                <span class=\"icon-play\"></span>\n                <span class=\"hide-text\">";
-  options={hash:{},inverse:self.noop,fn:self.program(11, program11, data),data:data}
-  if (helper = helpers._) { stack1 = helper.call(depth0, options); }
-  else { helper = (depth0 && depth0._); stack1 = typeof helper === functionType ? helper.call(depth0, options) : helper; }
-  if (!helpers._) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(11, program11, data),data:data}); }
+  foundHelper = helpers['_'];
+  stack1 = foundHelper || depth0['_'];
+  tmp1 = self.program(13, program13, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
+  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "</span>\n            </button>\n          </div>\n        </div>\n\n        <div class=\"scratchpad-toolbar\">\n            <!-- Row for playback controls -->\n            <div class=\"scratchpad-playbar\" style=\"display:none;\">\n                <div class=\"scratchpad-playbar-area\" style=\"display:none;\">\n                    <button\n                        class=\"simple-button primary scratchpad-playbar-play\"\n                        type=\"button\">\n                        <span class=\"icon-play\"></span>\n                    </button>\n\n                    <div class=\"scratchpad-playbar-progress\"></div>\n\n                    <span class=\"scratchpad-playbar-timeleft\"></span>\n                </div>\n                <div class=\"loading-msg\">\n                    ";
-  options={hash:{},inverse:self.noop,fn:self.program(13, program13, data),data:data}
-  if (helper = helpers._) { stack1 = helper.call(depth0, options); }
-  else { helper = (depth0 && depth0._); stack1 = typeof helper === functionType ? helper.call(depth0, options) : helper; }
-  if (!helpers._) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(13, program13, data),data:data}); }
+  foundHelper = helpers['_'];
+  stack1 = foundHelper || depth0['_'];
+  tmp1 = self.program(15, program15, data);
+  tmp1.hash = {};
+  tmp1.fn = tmp1;
+  tmp1.inverse = self.noop;
+  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
+  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\n                </div>\n            </div>\n            <div class=\"scratchpad-debugger\">\n                Debug Mode <input type=\"checkbox\" id=\"debug-mode\">\n                <span class=\"debugger-level\" style=\"display:none;margin-left:20px;\">\n                    Level\n                    <select id=\"debugger-level-select\">\n                        <option value=\"beginner\" selected>Beginner</option>\n                        <option value=\"advanced\">Advanced</option>\n                    </select>\n                </span>\n                <div class=\"debugger-simple\" style=\"display:none;margin-top:5px;\">\n                    <button class=\"debug-begin\" style=\"margin-right:20px;\">Begin</button>\n                    <button class=\"step-in\" disabled>Step</button>\n                    <button class=\"debug-end\" style=\"margin-left:20px;\">End</button>\n                </div>\n                <div class=\"debugger-complex\" style=\"display:none;margin-top:5px;\">\n                    <button class=\"debug-restart\" style=\"margin-right:10px;\">Restart</button>  <!-- start/restart -->\n                    <button class=\"step-over\" disabled>Step Over</button>\n                    <button class=\"step-in\" disabled>Step In</button>\n                    <button class=\"step-out\" disabled>Step Out</button>\n                    <button class=\"debug-continue\" style=\"margin-left:10px;\">Continue</button>\n                </div>\n            </div>\n        </div>\n\n        <div class=\"scratchpad-toolbar scratchpad-dev-record-row\" style=\"display:none;\"></div>\n    </div>\n</div>";
-  return buffer;
-  });;
+  buffer += "\n                </div>\n            </div>\n            <div class=\"scratchpad-debugger\"></div>\n        </div>\n\n        <div class=\"scratchpad-toolbar scratchpad-dev-record-row\" style=\"display:none;\"></div>\n    </div>\n</div>";
+  return buffer;});;
 window.ScratchpadDrawCanvas = Backbone.View.extend({
     initialize: function(options) {
         this.record = options.record;
@@ -641,6 +809,7 @@ window.LiveEditor = Backbone.View.extend({
     dom: {
         DRAW_CANVAS: ".scratchpad-draw-canvas",
         DRAW_COLOR_BUTTONS: "#draw-widgets a.draw-color-button",
+        CANVAS_WRAP: ".scratchpad-canvas-wrap",
         EDITOR: ".scratchpad-editor",
         CANVAS_LOADING: ".scratchpad-canvas-loading",
         BIG_PLAY_LOADING: ".scratchpad-editor-bigplay-loading",
@@ -654,6 +823,7 @@ window.LiveEditor = Backbone.View.extend({
         PLAYBAR_TIMELEFT: ".scratchpad-playbar-timeleft",
         PLAYBAR_UI: ".scratchpad-playbar-play, .scratchpad-playbar-progress",
         OUTPUT_FRAME: "#output-frame",
+        OUTPUT_DIV: "#output",
         ALL_OUTPUT: "#output, #output-frame"
     },
 
@@ -735,6 +905,7 @@ window.LiveEditor = Backbone.View.extend({
         // Set up the editor
         this.editor = new this.editors[this.editorType]({
             el: this.dom.EDITOR,
+            code: this.initialCode,
             autoFocus: options.autoFocus,
             config: this.config,
             record: this.record,
@@ -743,6 +914,26 @@ window.LiveEditor = Backbone.View.extend({
             workersDir: this.workersDir,
             type: this.editorType
         });
+
+        this.tipbar = new TipBar({
+            el: this.$(this.dom.OUTPUT_DIV),
+            liveEditor: this
+        });
+
+        // Set up the debugger;
+        if (options.useDebugger) {
+            this.debugger = new ScratchpadDebugger({
+                liveEditor: this,
+                editor: this.editor.editor
+            });
+            this.debugger.on("enabled", function (enabled) {
+                if (enabled) {
+                    this.$el.find("#restart-code").attr("disabled", "");
+                } else {
+                    this.$el.find("#restart-code").removeAttr("disabled");
+                }
+            }, this);
+        }
 
         var code = options.code;
 
@@ -805,37 +996,44 @@ window.LiveEditor = Backbone.View.extend({
         $el.delegate("#restart-code", "click",
             this.restartCode.bind(this));
 
-        $(window).on("message", this.listenMessages.bind(this));
+        this.handleMessagesBound = this.handleMessages.bind(this);
+        $(window).on("message", this.handleMessagesBound);
 
-        var toExec = false;
-
-        // When the frame loads, execute the code
         $el.find("#output-frame").on("load", function() {
-            toExec = true;
-            // TODO(leif): properly handle case where the user's code doesn't
-            // initially compile. There is currently a race condition in which
-            // the output frame is not ready for execution
-        });
+            this.markDirty("force");
+        }.bind(this));
 
         // Whenever the user changes code, execute the code
         this.editor.on("change", function() {
-            toExec = true;
-        });
+            this.markDirty();
+        }.bind(this));
 
-        // Attempt to run the code every 100ms or so
-        this.runCodeInterval = setInterval(function() {
-            if (toExec !== null) {
-                this.runCode(toExec === true ?
-                    this.editor.text() :
-                    toExec);
+        this.on("runDone", this.runDone.bind(this));
 
-                toExec = null;
+        // This function will fire once after each synchrynous block which changes the cursor
+        // or the current selection. We use it for tag highlighting in webpages.
+        var cursorDirty = function() {
+            if (self.outputState !== "clean" ) {
+                // This will fire after markDirty() itself gets a chance to start a new run
+                // So it will just keep resetting itself until one run comes back and there are
+                // no changes waiting
+                self.once("runDone", cursorDirty);
+            } else {
+                setTimeout(function() {
+                    if (self.editor.getSelectionIndices) {
+                        self.postFrame({
+                            setCursor: self.editor.getSelectionIndices()
+                        });
+                    }
+                    self.editor.once("changeCursor", cursorDirty);
+                }, 0);                
             }
-        }.bind(this), 100);
+        };
+        this.editor.once("changeCursor", cursorDirty);
 
         this.config.on("versionSwitched", function(e, version) {
             // Re-run the code after a version switch
-            toExec = true;
+            this.markDirty();
 
             // Run the JSHint config
             this.config.runVersion(version, "jshint");
@@ -854,7 +1052,9 @@ window.LiveEditor = Backbone.View.extend({
         });
 
         // Set up toolbar buttons
-        $el.buttonize();
+        if (jQuery.fn.buttonize) {
+            $el.buttonize();
+        }
 
         // Handle color button clicks during recording
         $el.on("buttonClick", "a.draw-color-button", function() {
@@ -990,125 +1190,6 @@ window.LiveEditor = Backbone.View.extend({
             });
         });
 
-        // TODO:
-        // - wrap postFrame({ type: "stepper", ... }) calls
-        // - move this out into its own view
-        // - create a separate template for the debugger controls
-
-        $el.on("change", "#debug-mode", function () {
-            self.debuggerLevel = $el.find("#debugger-level-select option:selected").val();
-
-            if (this.checked) {
-                self.editor.editor.setReadOnly(true);
-
-                $el.find(".debugger-level").show();
-
-                if (self.debuggerLevel === "beginner") {
-                    $el.find(".debugger-simple").show();
-                } else if (self.debuggerLevel === "advanced") {
-                    $el.find(".debugger-complex").show();
-                }
-            } else {
-                self.editor.editor.setReadOnly(false);
-
-                $el.find(".debugger-level").hide();
-                $el.find(".debugger-simple").hide();
-                $el.find(".debugger-complex").hide();
-
-                self.postFrame({
-                    type: "stepper",
-                    action: "run"
-                });
-            }
-        });
-
-        $el.on("change", "#debugger-level-select", function () {
-            self.debuggerLevel = $(this).find("option:selected").val();
-
-            if (self.debuggerLevel === "beginner") {
-                $el.find(".debugger-complex").hide();
-                $el.find(".debugger-simple").show();
-            } else if (self.debuggerLevel === "advanced") {
-                $el.find(".debugger-simple").hide();
-                $el.find(".debugger-complex").show();
-            }
-        });
-
-        $el.on("click", ".debug-begin", function () {
-            self.postFrame({
-                type: "stepper",
-                action: "reset"
-            });
-
-            self.postFrame({
-                type: "stepper",
-                action: "stepIn"
-            });
-
-            $el.find(".step-over").removeAttr("disabled");
-            $el.find(".step-in").removeAttr("disabled");
-            $el.find(".step-out").removeAttr("disabled");
-        });
-
-        $el.on("click", ".debug-end", function () {
-            // TODO: run to end
-            // right we only run the next breakpoint
-
-            self.postFrame({
-                type: "stepper",
-                action: "run",
-                ignoreBreakpoints: true
-            });
-        });
-
-        $el.on("click", ".debug-restart", function () {
-            self.postFrame({
-                type: "stepper",
-                action: "reset"
-            });
-
-            self.postFrame({
-                type: "stepper",
-                action: "run"
-            });
-
-            $el.find(".step-over").removeAttr("disabled");
-            $el.find(".step-in").removeAttr("disabled");
-            $el.find(".step-out").removeAttr("disabled");
-        });
-
-        $el.on("click", ".debug-continue", function () {
-            self.postFrame({
-                type: "stepper",
-                action: "run"
-            });
-
-            $el.find(".step-over").removeAttr("disabled");
-            $el.find(".step-in").removeAttr("disabled");
-            $el.find(".step-out").removeAttr("disabled");
-        });
-
-        $el.on("click", ".step-over", function () {
-            self.postFrame({
-                type: "stepper",
-                action: "stepOver"
-            });
-        });
-
-        $el.on("click", ".step-in", function () {
-            self.postFrame({
-                type: "stepper",
-                action: "stepIn"
-            });
-        });
-
-        $el.on("click", ".step-out", function () {
-            self.postFrame({
-                type: "stepper",
-                action: "stepOut"
-            });
-        });
-
         // Load the recording playback commands as well, if applicable
         if (this.recordingCommands) {
             this.record.loadRecording({
@@ -1119,8 +1200,8 @@ window.LiveEditor = Backbone.View.extend({
     },
 
     remove: function() {
-        clearInterval(this.runCodeInterval);
-        this.$el.remove();
+        $(window).off("message", this.handleMessagesBound);
+        this.editor.remove();
     },
 
     canRecord: function() {
@@ -1149,7 +1230,7 @@ window.LiveEditor = Backbone.View.extend({
             // Sometimes when Flash is blocked or the browser is slower,
             //  soundManager will fail to initialize at first,
             //  claiming no response from the Flash file.
-            // To handle that, we attempt a reboot 3 seconds after each
+            // To handle that, we attempt a reboot 3 seconds after each 
             //  timeout, clearing the timer if we get an onready during
             //  that time (which happens if user un-blocks flash).
             onready: function() {
@@ -1239,8 +1320,7 @@ window.LiveEditor = Backbone.View.extend({
             // When audio playback is complete, notify everyone listening
             // that playback is officially done
             onfinish: function() {
-                record.trigger("playPaused");
-                record.trigger("playStopped");
+                record.stopPlayback();
                 record.trigger("playEnded");
             },
             onsuspend: function() {
@@ -1256,13 +1336,17 @@ window.LiveEditor = Backbone.View.extend({
         // bytes from the server (otherwise the player breaks)
         var checkStreaming = setInterval(function() {
             // We've loaded enough to start playing
-            if (self.player && self.player.bytesLoaded > 0) {
+            if (self.audioReadyToPlay()) {
                 clearInterval(checkStreaming);
                 self.trigger("readyToPlay");
             }
         }, 16);
 
         this.bindPlayerHandlers();
+    },
+
+    audioReadyToPlay: function() {
+        return this.player && this.player.bytesLoaded > 0;
     },
 
     bindPlayerHandlers: function() {
@@ -1517,7 +1601,6 @@ window.LiveEditor = Backbone.View.extend({
             return;
         }
 
-        var self = this;
         var saveCode = this.editor.text();
 
         // You must have some code in the editor before you start recording
@@ -1641,13 +1724,12 @@ window.LiveEditor = Backbone.View.extend({
         }
     },
 
-    listenMessages: function(e) {
+    handleMessages: function(e) {
         var event = e.originalEvent;
         var data;
 
         try {
             data = JSON.parse(event.data);
-
         } catch (err) {
             // Malformed JSON, we don't care about it
         }
@@ -1656,8 +1738,8 @@ window.LiveEditor = Backbone.View.extend({
             return;
         }
 
-        if (data.type === "stepper") {
-            this.listenStepperMessages(data);
+        if (data.type === "debugger") {
+            // these messages are handled by ui/debugger.js:listenMessages
             return;
         }
 
@@ -1679,9 +1761,13 @@ window.LiveEditor = Backbone.View.extend({
         if (data.validate != null) {
             this.validation = data.validate;
         }
+        
+        if (data.results) {
+            this.trigger("runDone");
+        }
 
-        if (data.results && data.results.assertions) {
-
+        if (this.editorType.indexOf("ace_") === 0 && data.results &&
+                data.results.assertions) {
             // Remove previously added markers
             var markers = this.editor.editor.session.getMarkers();
             _.each(markers, function(marker, markerId) {
@@ -1689,13 +1775,13 @@ window.LiveEditor = Backbone.View.extend({
             }.bind(this));
 
             var annotations = [];
-            for (var i = 0; i < data.results.assertions.length; i++) {
+            for (var i = 0; i < data.results.assertions.length; i++) { 
                 var unitTest = data.results.assertions[i];
                 annotations.push({
-                    row: unitTest.row,
-                    column: unitTest.column,
+                    row: unitTest.row, 
+                    column: unitTest.column, 
                     text: unitTest.text,
-                    type: "warning"
+                    type: "warning" 
                 });
                 // Underline the problem line to make it more obvious
                 //  if they don't notice the gutter icon
@@ -1710,6 +1796,10 @@ window.LiveEditor = Backbone.View.extend({
            this.editor.editor.session.setAnnotations(annotations);
         }
 
+        if (data.results && _.isArray(data.results.errors)) {
+            this.tipbar.toggleErrors(data.results.errors);
+        }
+
         // Set the line visibility in the editor
         if (data.lines !== undefined) {
             this.editor.toggleGutter(data.lines);
@@ -1720,39 +1810,9 @@ window.LiveEditor = Backbone.View.extend({
             this.restartCode();
         }
 
-        // Set the cursor in the editor
-        if (data.cursor) {
-            this.editor.setCursor(data.cursor);
-            this.editor.setErrorHighlight(true);
-        }
-
-        // Set the focus back on the editor
-        if (data.focus) {
-            this.editor.focus();
-        }
-
         // Log the recorded action
         if (data.log) {
             this.record.log.apply(this.record, data.log);
-        }
-    },
-
-    listenStepperMessages: function(data) {
-        var editor = this.editor.editor;
-
-        if (data.action === "halted") {
-            this.$el.find(".step-over").attr("disabled", "");
-            this.$el.find(".step-in").attr("disabled", "");
-            this.$el.find(".step-out").attr("disabled", "");
-            editor.setHighlightActiveLine(false);
-        } else if (data.action === "step") {
-            if (data.line) {
-                editor.gotoLine(data.line);
-                editor.setHighlightActiveLine(true);
-            } else {
-                // TODO: figure out who's sending a "step" without a line
-                editor.setHighlightActiveLine(false);
-            }
         }
     },
 
@@ -1781,11 +1841,20 @@ window.LiveEditor = Backbone.View.extend({
 
     /*
      * Execute some code in the output frame.
+     *
+     * A note about the throttling:
+     * This limits updates to 50FPS. No point in updating faster than that.
+     * 
+     * DO NOT CALL THIS DIRECTLY
+     * Instead call markDirty because it will handle
+     * throttling requests properly.
      */
-    runCode: function(code) {
+    runCode: _.throttle(function(code) {
         var options = {
             code: arguments.length === 0 ? this.editor.text() : code,
+            cursor: this.editor.getSelectionIndices ? this.editor.getSelectionIndices() : -1,
             validate: this.validation || "",
+            noLint: false,
             version: this.config.curVersion(),
             settings: this.settings || {},
             workersDir: this.workersDir,
@@ -1798,7 +1867,38 @@ window.LiveEditor = Backbone.View.extend({
         this.trigger("runCode", options);
 
         this.postFrame(options);
+    }, 20),
+    
+    markDirty: function(force) {
+        // They're typing. Hide the tipbar to give them a chance to fix things up
+        this.tipbar.hide();
+        if (this.outputState === "clean" || force) {
+            // We will run at the end of this code block
+            // This stops replace from trying to execute code
+            // between deleting the old code and adding the new code
+            setTimeout(this.runCode.bind(this), 0);
+            this.outputState = "running";
+
+            // 500ms is an arbitrary timeout. Hopefully long enough for reasonable programs
+            // to execute, but short enough for editor to not freeze
+            this.runTimeout = setTimeout(function() { this.trigger("runDone"); }.bind(this), 500);
+        } else {
+            this.outputState = "dirty";
+        }
     },
+    // This will either be called when we receive the results
+    // Or it will timeout.
+    runDone: function() {
+        clearTimeout(this.runTimeout);
+        var lastOutputState = this.outputState;
+        this.outputState = "clean";
+        if (lastOutputState === "dirty") {
+            this.markDirty();
+        }
+    },
+    // This stops us from sending  any updates until
+    // we call markDirty("force") as a part of the frame load handler
+    outputState: "dirty",
 
     getScreenshot: function(callback) {
         // Unbind any handlers this function may have set for previous
@@ -1821,7 +1921,7 @@ window.LiveEditor = Backbone.View.extend({
         width = width || this.defaultOutputWidth;
         height = height || this.defaultOutputHeight;
 
-        this.$el.find(this.dom.OUTPUT_FRAME).width(width);
+        this.$el.find(this.dom.CANVAS_WRAP).width(width);
         this.$el.find(this.dom.ALL_OUTPUT).height(height);
 
         // Set the editor height to be the same as the canvas height
@@ -1837,7 +1937,7 @@ window.LiveEditor = Backbone.View.extend({
         // Unbind any handlers this function may have set for previous
         // screenshots
         $(window).off("message.getScreenshot");
-
+    
         // We're only expecting one screenshot back
         $(window).on("message.getScreenshot", function(e) {
             // Only call if the data is actually an image!
@@ -1845,7 +1945,7 @@ window.LiveEditor = Backbone.View.extend({
                 callback(e.originalEvent.data);
             }
         });
-
+    
         // Ask the frame for a screenshot
         this.postFrame({ screenshot: true });
     },
@@ -1854,7 +1954,7 @@ window.LiveEditor = Backbone.View.extend({
         this.editor.undo();
     },
 
-    _qualifyURL: function(url){
+    _qualifyURL: function(url) {
         var a = document.createElement("a");
         a.href = url;
         return a.href;
