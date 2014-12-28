@@ -894,6 +894,6 @@ window.ScratchpadAutosuggestData = {
         type: $._("callback"),
         whitelist: ["draw", "mouseClicked", "mousePressed", "mouseReleased",
             "mouseMoved", "mouseDragged", "mouseOver", "mouseOut",
-            "keyPressed", "keyReleased", "keyTyped"]
+            "keyPressed", "keyReleased", "keyTyped", "touchStarted", "touchMoved", "touchEnded"]
     },
 };

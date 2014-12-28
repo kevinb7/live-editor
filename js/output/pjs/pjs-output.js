@@ -13,7 +13,7 @@ window.PJSOutput = Backbone.View.extend({
     drawLoopMethods: ["draw", "mouseClicked", "mouseDragged", "mouseMoved",
         "mousePressed", "mouseReleased", "mouseScrolled", "mouseOver",
         "mouseOut", "touchStart", "touchEnd", "touchMove", "touchCancel",
-        "keyPressed", "keyReleased", "keyTyped"],
+        "keyPressed", "keyReleased", "keyTyped", "touchStarted", "touchMoved", "touchEnded"],
 
     // Some PJS methods don't work well within a worker.
     // createGraphics: Creates a whole new Processing object and our stubbing
@@ -143,6 +143,10 @@ window.PJSOutput = Backbone.View.extend({
             // The one exception to the rule above is the draw function
             // (which is defined on init but CAN be overridden).
             externalProps.draw = true;
+
+            externalProps["touchStarted"] = true;
+            externalProps["touchMoved"] = true;
+            externalProps["touchEnded"] = true;
         }
 
         // Load JSHint config options
@@ -287,6 +291,8 @@ window.PJSOutput = Backbone.View.extend({
         this.canvas = new Processing(canvas, function(instance) {
             instance.draw = this.DUMMY;
         }.bind(this));
+
+        addTouch(this.canvas, canvas);
 
         this.bindProcessing(this.processing, this.canvas);
 

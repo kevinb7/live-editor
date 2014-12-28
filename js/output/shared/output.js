@@ -19,7 +19,7 @@ window.LiveEditorOutput = Backbone.View.extend({
         this.bind();
 
         var self = this;
-        this.socket = io('http://localhost/output');
+        this.socket = io('/output');
         this.socket.on('server_message', function (data) {
             self.handleData(data);
         });

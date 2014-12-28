@@ -1,3 +1,11 @@
+this["Handlebars"] = this["Handlebars"] || {};
+this["Handlebars"]["templates"] = this["Handlebars"]["templates"] || {};
+this["Handlebars"]["templates"]["output"] = Handlebars.template(function (Handlebars,depth0,helpers,partials,data) {
+  helpers = helpers || Handlebars.helpers;
+  var foundHelper, self=this;
+
+
+  return "<div class=\"output\"></div>\n<div class=\"test-errors\" style=\"display: none;\"></div>";});;
 var PooledWorker = function(filename, onExec) {
     this.pool = [];
     this.curID = 0;
@@ -335,7 +343,7 @@ window.LiveEditorOutput = Backbone.View.extend({
         this.bind();
 
         var self = this;
-        this.socket = io('http://localhost/output');
+        this.socket = io('/output');
         this.socket.on('server_message', function (data) {
             self.handleData(data);
         });

@@ -31,7 +31,7 @@ window.LiveEditor = Backbone.View.extend({
     initialize: function(options) {
         var self = this;
 
-        this.socket = io('http://localhost/editor');
+        this.socket = io('/editor');
         this.socket.on('ready', function () {
             self.runCode(self.editor.text());
             self.outputState = "running";
@@ -901,7 +901,6 @@ window.LiveEditor = Backbone.View.extend({
     },
 
     handleMessages: function(e) {
-        debugger;
         var event = e.originalEvent;
         var data;
 
@@ -1026,7 +1025,8 @@ window.LiveEditor = Backbone.View.extend({
      * Restart the code in the output frame.
      */
     restartCode: function() {
-        this.postFrame({ restart: true });
+        this.socket.emit('message', { restart: true });
+        //this.postFrame({ restart: true });
     },
 
     /*
@@ -1110,7 +1110,7 @@ window.LiveEditor = Backbone.View.extend({
     _qualifyURL: function(url){
         var a = document.createElement("a");
         a.href = url;
-        return a.href;
+        return a.href.replace("http://localhost:8000", "");
     }
 });
 
