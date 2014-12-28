@@ -838,11 +838,12 @@ window.LiveEditor = Backbone.View.extend({
         var self = this;
 
         this.socket = io('/editor');
-        this.socket.on('ready', function () {
+        this.socket.on('connect', function() {
+            console.log("connected");
             self.runCode(self.editor.text());
             self.outputState = "running";
         });
-        this.socket.on('server_message', function (data) {
+        this.socket.on('message', function (data) {
             self.handleData(data);
         });
 

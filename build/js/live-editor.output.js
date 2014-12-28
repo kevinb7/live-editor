@@ -344,7 +344,7 @@ window.LiveEditorOutput = Backbone.View.extend({
 
         var self = this;
         this.socket = io('/output');
-        this.socket.on('server_message', function (data) {
+        this.socket.on('message', function (data) {
             self.handleData(data);
         });
     },
@@ -522,7 +522,8 @@ window.LiveEditorOutput = Backbone.View.extend({
 
             this.postParent({
                 results: {
-                    code: userCode,
+                    // isn't being used by anything
+                    //code: userCode,
                     errors: errors,
                     tests: testResults || [],
                     assertions: this.assertions

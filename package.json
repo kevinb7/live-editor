@@ -35,7 +35,8 @@
     "sinon": "^1.10.3",
     "handlebars": "1.0.5-beta",
     "gulp-bower": "0.0.7",
-    "gulp-symlink": "^2.0.1"
+    "gulp-symlink": "^2.0.1",
+    "redis": "^0.12.1"
   },
   "dependencies": {
     "socket.io": "^1.2.0"

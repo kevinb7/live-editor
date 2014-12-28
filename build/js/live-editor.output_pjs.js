@@ -1789,7 +1789,8 @@ window.PJSOutput = Backbone.View.extend({
 
                 this.output.postParent({
                     results: {
-                        code: this.output.getUserCode(),
+                        // doesn't seem to be used by anything
+                        //code: this.output.getUserCode(),
                         errors: [],
                         tests: [{
                             name: name,
