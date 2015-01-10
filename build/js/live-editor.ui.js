@@ -837,15 +837,56 @@ window.LiveEditor = Backbone.View.extend({
     initialize: function(options) {
         var self = this;
 
-        this.socket = io('/editor');
-        this.socket.on('connect', function() {
-            console.log("connected");
-            self.runCode(self.editor.text());
-            self.outputState = "running";
-        });
-        this.socket.on('message', function (data) {
-            self.handleData(data);
-        });
+        // Channel API code
+        if (goog && goog.appengine && typeof goog.appengine.Channel === "function") {
+            var channel = new goog.appengine.Channel(token);
+            this.socket = channel.open();
+            this.socket.onopen = function () {
+                console.log("socket: open");
+            };
+            this.socket.onmessage = function (e) {
+                console.log("socket: message");
+                console.log("output said: %o", JSON.parse(e.data));
+                if (e.data === "connected") {
+                    self.runCode(self.editor.text());
+                    self.outputState = "running";
+                } else {
+                    self.handleData(JSON.parse(e.data));
+                }
+            };
+            this.socket.onerror = function () {
+                console.log("socket: error");
+            };
+            this.socket.onclose = function () {
+                console.log("socket: close");
+            };
+
+            this.sendChannelMessage = function(path, value) {
+                var xhr = new XMLHttpRequest();   // new HttpRequest instance
+                xhr.open("POST", path);
+                xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+                if (typeof value === "object") {
+                    xhr.send(JSON.stringify(value));
+                } else if (typeof value === "string") {
+                    xhr.send(value);
+                }
+            };
+
+            this.sendChannelMessage("/editor", "connected");
+        }
+
+        // socket.io code
+        if (typeof io === "function") {
+            this.socket = io('/editor');
+            this.socket.on('connect', function() {
+                console.log("connected");
+                self.runCode(self.editor.text());
+                self.outputState = "running";
+            });
+            this.socket.on('message', function (data) {
+                self.handleData(data);
+            });
+        }
 
         this.uniq = Math.floor(Math.random()*100);
 
@@ -1832,8 +1873,13 @@ window.LiveEditor = Backbone.View.extend({
      * Restart the code in the output frame.
      */
     restartCode: function() {
-        this.socket.emit('message', { restart: true });
-        //this.postFrame({ restart: true });
+        if (this.sendChannelMessage) {
+            this.sendChannelMessage("/editor", { restart: true })
+        } else if (typeof io === "function") {
+            this.socket.emit('message', { restart: true });
+        } else {
+            this.postFrame({ restart: true });
+        }
     },
 
     /*
@@ -1854,10 +1900,15 @@ window.LiveEditor = Backbone.View.extend({
 
         this.trigger("runCode", options);
 
-//        this.postFrame(options);
-
-        console.log('sending code to server');
-        this.socket.emit('message', options);
+        if (this.sendChannelMessage) {
+            console.log('sending code to server via Channel API');
+            this.sendChannelMessage("/editor", options);
+        } else if (typeof io === "function") {
+            console.log('sending code to server via socket.i');
+            this.socket.emit('message', options);
+        } else {
+            this.postFrame(options);
+        }
     },
 
     getScreenshot: function(callback) {

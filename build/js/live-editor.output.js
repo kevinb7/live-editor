@@ -343,10 +343,45 @@ window.LiveEditorOutput = Backbone.View.extend({
         this.bind();
 
         var self = this;
-        this.socket = io('/output');
-        this.socket.on('message', function (data) {
-            self.handleData(data);
-        });
+        if (goog && goog.appengine && typeof goog.appengine.Channel === "function") {
+            var channel = new goog.appengine.Channel(token);
+            this.socket = channel.open();
+            this.socket.onopen = function () {
+                console.log("socket: open");
+            };
+            this.socket.onmessage = function (e) {
+                console.log("socket: message");
+                console.log("output said: %o", JSON.parse(e.data));
+                self.handleData(JSON.parse(e.data));
+            };
+            this.socket.onerror = function () {
+                console.log("socket: error");
+            };
+            this.socket.onclose = function () {
+                console.log("socket: close");
+            };
+
+            this.sendChannelMessage = function(path, value) {
+                var xhr = new XMLHttpRequest();   // new HttpRequest instance
+                xhr.open("POST", path);
+                xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+                if (typeof value === "object") {
+                    xhr.send(JSON.stringify(value));
+                } else if (typeof value === "string") {
+                    xhr.send(value);
+                }
+            };
+
+            this.sendChannelMessage("/output", "connected");
+        }
+
+        // socket.io code
+        if (typeof io === "function") {
+            this.socket = io('/output');
+            this.socket.on('message', function (data) {
+                self.handleData(data);
+            });
+        }
     },
 
     render: function() {
@@ -474,7 +509,11 @@ window.LiveEditorOutput = Backbone.View.extend({
     // Send a message back to the parent frame
     postParent: function(data) {
         if (this.socket) {
-            this.socket.emit('message', data);
+            if (typeof io === "function") {     // socket.io
+                this.socket.emit('message', data);
+            } else {    // Channel API
+                this.sendChannelMessage("/output", data);
+            }
         } else {
             // If there is no frameSource (e.g. we're not embedded in another page)
             // Then we don't need to care about sending the messages anywhere!
