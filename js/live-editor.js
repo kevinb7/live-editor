@@ -38,15 +38,16 @@ window.LiveEditor = Backbone.View.extend({
             this.socket.onopen = function () {
                 console.log("socket: open");
             };
+            this.socket.onopen = function () {
+                console.log("socket: open");
+
+                self.runCode(self.editor.text());
+                self.outputState = "running";
+            };
             this.socket.onmessage = function (e) {
                 console.log("socket: message");
-                console.log("output said: %o", JSON.parse(e.data));
-                if (e.data === "connected") {
-                    self.runCode(self.editor.text());
-                    self.outputState = "running";
-                } else {
-                    self.handleData(JSON.parse(e.data));
-                }
+
+                self.handleData(JSON.parse(e.data));
             };
             this.socket.onerror = function () {
                 console.log("socket: error");
@@ -65,8 +66,6 @@ window.LiveEditor = Backbone.View.extend({
                     xhr.send(value);
                 }
             };
-
-            this.sendChannelMessage("/editor", "connected");
         }
 
         // socket.io code

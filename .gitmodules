@@ -16,3 +16,6 @@
 [submodule "external/structuredjs"]
 	path = external/structuredjs
 	url = https://github.com/Khan/structuredjs
+[submodule "external/live-editor-server"]
+	path = external/live-editor-server
+	url = https://github.com/kevinb7/live-editor-server
