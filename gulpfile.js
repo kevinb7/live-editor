@@ -18,9 +18,22 @@ var request = require("request");
 
 var paths = require("./build-paths.json");
 
+// place the build files in live-editor-server so that they get deployed
+var buildDir = "external/live-editor-server/build/";
+
+var updatePaths = function(paths) {
+    return paths.map(function (path) {
+        if (path.indexOf("build/") === 0) {
+            return path.replace("build/", buildDir);
+        } else {
+            return path;
+        }
+    });
+};
+
 gulp.task("templates", function() {
-    gulp.src(paths.templates)
-        .pipe(changed("build/tmpl", {extension: ".js"}))
+    gulp.src(updatePaths(paths.templates))
+        .pipe(changed(buildDir + "/tmpl", {extension: ".js"}))
         .pipe(handlebars({
             handlebars: require("handlebars")
         }))
@@ -28,7 +41,7 @@ gulp.task("templates", function() {
         .pipe(declare({
             namespace: "Handlebars.templates"
         }))
-        .pipe(gulp.dest("build/tmpl"));
+        .pipe(gulp.dest(buildDir + "tmpl"));
 });
 
 var scriptTypes = Object.keys(paths.scripts);
@@ -36,19 +49,19 @@ var scriptTypes = Object.keys(paths.scripts);
 scriptTypes.forEach(function(type) {
     gulp.task("script_" + type, ["templates"], function() {
         var outputFileName = "live-editor." + type + ".js";
-        return gulp.src(paths.scripts[type])
-            .pipe(newer("build/js/" + outputFileName))
+        return gulp.src(updatePaths(paths.scripts[type]))
+            .pipe(newer(buildDir + "js/" + outputFileName))
             .pipe(concat(outputFileName))
-            .pipe(gulp.dest("build/js"));
+            .pipe(gulp.dest(buildDir + "js"));
     });
 
     gulp.task("script_" + type + "_min", ["script_" + type], function() {
         var outputFileName = "live-editor." + type + ".min.js";
-        return gulp.src(["build/js/live-editor." + type + ".js"])
-            .pipe(newer("build/js/" + outputFileName))
+        return gulp.src([buildDir + "js/live-editor." + type + ".js"])
+            .pipe(newer(buildDir + "js/" + outputFileName))
             .pipe(uglify())
             .pipe(concat(outputFileName))
-            .pipe(gulp.dest("build/js"));
+            .pipe(gulp.dest(buildDir + "js"));
     });
 });
 
@@ -62,18 +75,18 @@ gulp.task("scripts_min", scriptTypes.map(function(type) {
 
 gulp.task("workers", function() {
     gulp.src(paths.workers_webpage)
-        .pipe(gulp.dest("build/workers/webpage"));
+        .pipe(gulp.dest(buildDir + "workers/webpage"));
 
     gulp.src(paths.workers_pjs)
-        .pipe(gulp.dest("build/workers/pjs"));
+        .pipe(gulp.dest(buildDir + "workers/pjs"));
 
     gulp.src(paths.workers_shared)
-        .pipe(gulp.dest("build/workers/shared"));
+        .pipe(gulp.dest(buildDir + "workers/shared"));
 });
 
 gulp.task("externals", function() {
     gulp.src(paths.externals, {base: "./"})
-        .pipe(gulp.dest("build/"));
+        .pipe(gulp.dest(buildDir));
 });
 
 var styleTypes = Object.keys(paths.styles);
@@ -82,9 +95,9 @@ styleTypes.forEach(function(type) {
     gulp.task("style_" + type, function() {
         var outputFileName = "live-editor." + type + ".css";
         return gulp.src(paths.styles[type])
-            .pipe(newer("build/css/" + outputFileName))
+            .pipe(newer(buildDir + "css/" + outputFileName))
             .pipe(concat(outputFileName))
-            .pipe(gulp.dest("build/css"));
+            .pipe(gulp.dest(buildDir + "css"));
     });
 });
 
@@ -94,41 +107,42 @@ gulp.task("styles", styleTypes.map(function(type) {
 
 gulp.task("fonts", function() {
     gulp.src(paths.fonts)
-        .pipe(gulp.dest("build/fonts"));
+        .pipe(gulp.dest(buildDir + "fonts"));
 });
 
 gulp.task("images", function() {
     gulp.src(paths.images)
-        .pipe(gulp.dest("build/images"));
+        .pipe(gulp.dest(buildDir + "images"));
 });
 
 gulp.task("watch", function() {
     scriptTypes.forEach(function(type) {
-        gulp.watch(paths.scripts[type], ["script_" + type]);
+        gulp.watch(updatePaths(paths.scripts[type]), ["script_" + type]);
     });
 
     // Run output tests when the output code changes
-    gulp.watch(paths.scripts.output, ["test"]);
-    gulp.watch(paths.scripts.output_pjs
+    gulp.watch(updatePaths(paths.scripts.output), ["test"]);
+    gulp.watch(updatePaths(paths.scripts.output_pjs)
         .concat(["tests/output/pjs/*"]), ["test_output_pjs"]);
-    gulp.watch(paths.scripts.output_webpage
+    gulp.watch(updatePaths(paths.scripts.output_webpage)
         .concat(["tests/output/webpage/*"]), ["test_output_webpage"]);
     // TODO(bbondy): Uncomment when PhantomJS has support for typed arrays
     // gulp.watch(paths.scripts.output_sql
     //    .concat(["tests/output/sql/*"]), ["test_output_sql"]);
-    gulp.watch(paths.scripts.tooltips
+    gulp.watch(updatePaths(paths.scripts.tooltips)
         .concat(["tests/tooltips/*"]), ["test_tooltips"]);
 
     styleTypes.forEach(function(type) {
-        gulp.watch(paths.styles[type], ["style_" + type]);
+        gulp.watch(updatePaths(paths.styles[type]), ["style_" + type]);
     });
 
-    gulp.watch(paths.templates, ["templates"]);
+    gulp.watch(updatePaths(paths.templates), ["templates"]);
 
     gulp.watch(paths.workers_pjs.concat(paths.workers_webpage)
         .concat(paths.workers_shared), ["workers"]);
 
-    gulp.watch(paths.images, ["images"]);
+    // ignore images to keep deploy size small
+    //gulp.watch(paths.images, ["images"]);
 });
 
 var runTest = function(fileName) {
@@ -200,5 +214,8 @@ gulp.task("test", function(callback) {
     runSequence("test_output_pjs", "test_output_webpage", "test_tooltips", callback);
 });
 
+//gulp.task("default", ["watch", "templates", "scripts", "workers", "styles",
+//    "fonts", "images", "externals"]);
+
 gulp.task("default", ["watch", "templates", "scripts", "workers", "styles",
-    "fonts", "images", "externals"]);
+    "fonts", "externals"]);  // ignore images to keep deploy size small

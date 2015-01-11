@@ -15,7 +15,7 @@
     display: none;
     font-family: Helvetica;
     font-weight: normal;
-    left: 125px;
+    left: 132px;
     margin: auto;
     min-height: 40px;
     position: absolute;
@@ -43,6 +43,7 @@
 .tipbar .text-wrap {
     line-height: 1.4em;
     margin: 8px 8px 33px 8px;
+    pointer-events: all;
 }
 .tipbar .text-wrap .message {
     line-height: 20px;
@@ -153,6 +154,6 @@
     width: 100%;
 }
 .error-overlay {
-    background: rgba(255, 255, 255, 0.6);
+    /*background: rgba(255, 255, 255, 0.6);*/
     z-index: auto;
 }

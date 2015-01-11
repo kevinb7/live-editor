@@ -4,11 +4,16 @@ window.ScratchpadDrawCanvas = Backbone.View.extend({
 
         this.isDrawing = false;
 
-        this.ctx = this.el.getContext("2d");
-        this.ctx.shadowBlur = 2;
-        this.ctx.lineCap = "round";
-        this.ctx.lineJoin = "round";
-        this.ctx.lineWidth = 1;
+        if (this.el) {
+            this.ctx = this.el.getContext("2d");
+        }
+        
+        if (this.ctx) {
+            this.ctx.shadowBlur = 2;
+            this.ctx.lineCap = "round";
+            this.ctx.lineJoin = "round";
+            this.ctx.lineWidth = 1;
+        }
 
         this.clear(true);
 
@@ -138,11 +143,13 @@ window.ScratchpadDrawCanvas = Backbone.View.extend({
 
     drawLine: function(x, y) {
         if (this.down && this.x != null && this.y != null) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(this.x, this.y);
-            this.ctx.lineTo(x, y);
-            this.ctx.stroke();
-            this.ctx.closePath();
+            if (this.ctx) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.x, this.y);
+                this.ctx.lineTo(x, y);
+                this.ctx.stroke();
+                this.ctx.closePath();   
+            }
 
             this.x = x;
             this.y = y;
@@ -166,9 +173,11 @@ window.ScratchpadDrawCanvas = Backbone.View.extend({
 
             this.color = color;
 
-            this.ctx.shadowColor = "rgba(" + this.colors[color] + ",0.5)";
-            this.ctx.strokeStyle = "rgba(" + this.colors[color] + ",1.0)";
-
+            if (this.ctx) {
+                this.ctx.shadowColor = "rgba(" + this.colors[color] + ",0.5)";
+                this.ctx.strokeStyle = "rgba(" + this.colors[color] + ",1.0)";
+            }
+            
             this.record.log("setColor", color);
         }
 
@@ -177,7 +186,10 @@ window.ScratchpadDrawCanvas = Backbone.View.extend({
 
     clear: function(force) {
         // Clean off the canvas
-        this.ctx.clearRect(0, 0, 600, 480);
+        // TODO(kevinb7) figure out who's clearing the canvas in output.html
+        if (this.ctx) {
+            this.ctx.clearRect(0, 0, 600, 480);
+        }
         this.x = null;
         this.y = null;
         this.down = false;

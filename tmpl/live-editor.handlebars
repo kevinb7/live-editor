@@ -1,3 +1,26 @@
+<div class="scratchpad-toolbar">
+    <button id="restart-code"
+            class="simple-button pull-right">
+        <span class="icon-refresh"></span>
+        {{#_}}Restart{{/_}}</button>
+
+    <!-- Widgets for selecting colors to doodle on the canvas during
+        recordings -->
+    <div id="draw-widgets" style="display:none;">
+        <a href="" id="draw-clear-button" class="ui-button">
+            <span class="ui-icon-cancel"></span>
+        </a>
+        {{#each colors}}
+            <a href="" class="draw-color-button" id="{{this}}">
+                <span></span>
+            </a>
+        {{/each}}
+    </div>
+
+    <!-- Record button -->
+    <button id="record" class="simple-button pull-left" style="display:none;">{{#_}}Record{{/_}}</button>
+</div>
+
 <div class="scratchpad-wrap">
     <!-- Canvases (Drawing + Output) -->
     <div class="scratchpad-canvas-wrap">
@@ -7,39 +30,16 @@
             <!--<iframe id="output-frame"-->
                 <!--src="{{execFile}}"-->
                 <!--data-src="{{execFile}}"></iframe>-->
-            <canvas class="scratchpad-draw-canvas" style="display:none;"
-                width="400" height="400"></canvas>
+            <!--<canvas class="scratchpad-draw-canvas" style="display:none;"-->
+                <!--width="400" height="400"></canvas>-->
 
-            <div class="overlay disable-overlay" style="display:none;">
-            </div>
+            <!--<div class="overlay disable-overlay" style="display:none;">-->
+            <!--</div>-->
 
-            <div class="scratchpad-canvas-loading">
-                <img src="{{imagesDir}}/throbber-full.gif">
-                <span class="hide-text">{{#_}}Loading...{{/_}}</span>
-            </div>
-        </div>
-
-        <div class="scratchpad-toolbar">
-            <button id="restart-code"
-                class="simple-button pull-right">
-                <span class="icon-refresh"></span>
-                {{#_}}Restart{{/_}}</button>
-
-            <!-- Widgets for selecting colors to doodle on the canvas during
-                recordings -->
-            <div id="draw-widgets" style="display:none;">
-                <a href="" id="draw-clear-button" class="ui-button">
-                    <span class="ui-icon-cancel"></span>
-                </a>
-                {{#each colors}}
-                <a href="" class="draw-color-button" id="{{this}}">
-                    <span></span>
-                </a>
-                {{/each}}
-            </div>
-
-            <!-- Record button -->
-            <button id="record" class="simple-button pull-left" style="display:none;">{{#_}}Record{{/_}}</button>
+            <!--<div class="scratchpad-canvas-loading">-->
+                <!--<img src="{{imagesDir}}/throbber-full.gif">-->
+                <!--<span class="hide-text">{{#_}}Loading...{{/_}}</span>-->
+            <!--</div>-->
         </div>
     </div>
 

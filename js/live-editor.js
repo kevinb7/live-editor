@@ -1125,7 +1125,7 @@ window.LiveEditor = Backbone.View.extend({
         width = width || this.defaultOutputWidth;
         height = height || this.defaultOutputHeight;
 
-        this.$el.find(this.dom.CANVAS_WRAP).width(width);
+        //this.$el.find(this.dom.CANVAS_WRAP).width(width);
         this.$el.find(this.dom.ALL_OUTPUT).height(height);
 
         // Set the editor height to be the same as the canvas height

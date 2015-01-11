@@ -8,6 +8,7 @@
 
 .scratchpad-wrap .scratchpad-canvas-wrap {
     float: right;
+    pointer-events: none;
 }
 
 .scratchpad-wrap .scratchpad-canvas-wrap  #output {
@@ -17,7 +18,7 @@
 }
 
 .scratchpad-wrap .scratchpad-editor-wrap {
-    margin-right: 412px;
+    /*margin-right: 412px;*/
     position: relative;
 }
 
@@ -31,8 +32,8 @@
     overflow: hidden;
 }
 
-.scratchpad-wrap .scratchpad-toolbar {
-    margin-top: 10px;
+.scratchpad-toolbar {
+    margin-bottom: 10px;
     min-height: 30px;
 }
 
@@ -173,7 +174,14 @@
 
 #output {
     height: 402px;
-    position: relative;
+    /*position: relative;*/
+    position: absolute;
+    margin-left: -405px;
+    z-index: 100;  /* so it's below the code */
+}
+
+.scratchpad-editor, .ace_tm {
+    background-color: transparent !important;
 }
 
 #output-frame,
@@ -231,3 +239,4 @@ button {
 button.hilite {
     box-shadow: 0 0 20px green;
 }
+
