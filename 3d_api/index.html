@@ -21,7 +21,7 @@
     </style>
 </head>
 <body>
-    <h1>Live Editor Example</h1>
+    <h1>Live Editor Example: 3D API</h1>
     <div id="sample-live-editor"></div>
 
     <script src="build/js/live-editor.core_deps.js"></script>
@@ -31,12 +31,32 @@
     <script src="build/js/live-editor.tooltips.js"></script>
     <script src="build/js/live-editor.ui.js"></script>
     <script src="build/js/live-editor.editor_ace.js"></script>
-    <script src="build/js/live-editor.tidy.js"></script>
 
     <script>
+        
+    var code =  "var mesh = new Mesh();\n" +
+                "mesh.addVertex(100,100,100);\n" +
+                "mesh.addVertex(-100,100,100);\n" +
+                "mesh.addVertex(-100,-100,100);\n" +
+                "mesh.addVertex(100,-100,100);\n" +
+                "mesh.addVertex(100,100,-100);\n" +
+                "mesh.addVertex(-100,100,-100);\n" +
+                "mesh.addVertex(-100,-100,-100);\n" +
+                "mesh.addVertex(100,-100,-100);\n" +
+                "\n" +
+                "strokeWeight(2);\n" +
+                "mesh.addEdge(0,1);\n" +
+                "mesh.addEdge(1,2);\n" +
+                "mesh.addEdge(2,3);\n" +
+                "mesh.addEdge(3,0);\n" +
+                "\n" +
+                "mesh.addFace(0,1,2,3);\n" +
+                "mesh.addFace(1,0,4,5);\n" +
+                "mesh.addFace(0,3,7,4);";
+        
     window.liveEditor = new LiveEditor({
         el: $("#sample-live-editor"),
-        code: window.localStorage["test-code"] || "rect(10, 10, 100, 100);",
+        code: window.localStorage["3d-test-code"] || code,
         width: 400,
         height: 400,
         editorHeight: "80%",
@@ -51,12 +71,6 @@
         window.localStorage["test-code"] = liveEditor.editor.text();
     });
     ScratchpadAutosuggest.init(liveEditor.editor.editor);
-    ScratchpadTidy.init({
-        editor: liveEditor.editor.editor,
-        liveEditor: liveEditor,
-        externalsDir: liveEditor.externalsDir,
-        workersDir: liveEditor.workersDir
-    });
     </script>
 </body>
 </html>

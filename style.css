@@ -1,0 +1,43 @@
+body {
+    font-family: sans-serif;
+    font-size: 1.3em;
+    margin: 20px;
+}
+
+h1 {
+    margin-bottom: 0.25em;
+}
+
+/*img {*/
+    /*position: absolute;*/
+    /*left: 50%;*/
+    /*top: 50%;*/
+    /*-webkit-transform: translateX(-20%);*/
+/*}*/
+
+img {
+    margin-left: -104px;
+}
+
+#container {
+    width:600px;
+    margin:auto;
+}
+
+#pretty_print {
+    background-color: #2ec0ff;
+}
+
+#stepper {
+    background-color: #ffcb02;
+}
+
+p {
+    margin-top: 0;
+    font-weight: 100;
+    line-height: 1.25em;
+}
+
+div {
+    font-weight: 100;
+}

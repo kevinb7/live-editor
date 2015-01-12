@@ -3,73 +3,122 @@
 <head lang="en">
   <meta charset="UTF-8">
   <title></title>
-  <style>
-    body {
-      font-family: sans-serif;
-      font-size: 1.3em;
-      margin: 20px;
-    }
-
-    h1,h2 {
-      margin-top: 0.5em;
-    }
-
-    h1 {
-      margin-bottom: 0;
-    }
-
-    div {
-      width: 600px;
-      padding: 10px 20px;
-      margin-top: 20px;
-      margin-left: -20px;
-    }
-
-    #pretty_print {
-      background-color: #2ec0ff;
-    }
-
-    #stepper {
-      background-color: #ffcb02;
-    }
-
-    p {
-      margin-top: 0;
-    }
-
-    a {
-      margin-right: 10px;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-<h1>Hackweek Projects</h1>
-by kevinb7 <a href="https://github.com/kevinb7">https://github.com/kevinb7</a>
 
-<div id="stepper">
-  <h2>Stepper</h2>
-  <p>
-    Debug your code in the live-editor.
-  </p>
-  <p>
-    <b>Note:</b> Firefox 26+ or Chrome 39+ required.
-  </p>
-  <p>
-    <a href="stepper/index.html?debugger=true">Live Demo</a>
-    <a href="stepper_more_info.html">More Info</a>
-  </p>
+<div id="wrapper">
+  <div id="container">
+    <h1>live-editor: possible features</h1>
+    <p>
+      by Kevin Barabash<br>
+      github: <a href="http://github.com/kevinb7">kevinb7</a>
+    </p>
+
+    <h2>3D API</h2>
+    <p>
+      Modifies the processing-js API by replacing 2D drawing primitives with a very
+      simple 3D scene graph.  The scene graph contains only a single object called
+      "mesh" which users can add vertices, edges, and faces to.  While the user is
+      building the mesh they can rotate it as well as toggle different overlays that
+      show each vertex's index (label) and/or face normals.  This makes it easier
+      for users to create geometry as well as debug common problems in 3D programming
+      such as faces pointing the wrong way.
+    </p>
+    <p>
+      The 3D rendering is done by a very simple Canvas based library I wrote called
+      platonic-solids.  It uses the fact that platonic solids are all convex to take
+      some short cuts to avoid implementing a depth buffer.  I would like to replace 
+      this library with something more robust like THREE.js and/or voxel.js.
+    </p>
+    <p>
+      <a href="3d_api/index.html">demo</a>
+    </p>
+    <p>
+      <span style="font-style:italic;color:#999;">Hover over to see more screenshots.</span>
+    </p>
+    <div id="API_container">
+      <img id="API_0" src="images/3D_API_0.png" style="display:block;">
+      <img id="API_1" src="images/3D_API_1.png" style="display:none;">
+      <img id="API_2" src="images/3D_API_2.png" style="display:none;">
+      <img id="API_3" src="images/3D_API_3.png" style="display:none;">
+    </div>
+    
+    <h2>Remote Output</h2>
+    <p>
+      Breaks "output.html" out of its iframe and puts it in its own tab, window,
+      browser, or device.  The main "index.html" communicates with "output.html"
+      by sending messages to a public server.
+    </p>
+    <p>
+      The server is implemented in Python and uses Google App Engine to serve
+      files and the Channel API to ferry messages between the two pages.  For
+      more details see <a href="https://github.com/kevinb7/live-editor-server">live-editor-server</a>.
+    </p>
+    <p>
+      <a href="http://elite-clover-821.appspot.com/editor">demo editor</a>
+    </p>
+    <p>
+      <a href="http://elite-clover-821.appspot.com/editor">demo output</a>
+    </p>
+    <h2>Tidy</h2>
+    <p>
+      The "Tidy" button automatically format all of the code in the editor.  It
+      uses the "preserveBlankLines" option that I added to escodegen to preserve
+      spaces between lines.  It also keeps track of not only the cursor position
+      in the code but also the relative distance of the cursor from the top of 
+      the editor's viewport so that user's position is maintained after 
+      formatting occurs.
+    </p>
+    <p>
+      <a href="tidy/index.html">demo</a>
+    </p>
+    <p>
+      <span style="font-style:italic;color:#999;">Hover over to see more screenshots.</span>
+    </p>
+    <div id="tidy_container">
+      <img id="tidy_0" src="images/tidy_0.png" style="display:block;">
+      <img id="tidy_1" src="images/tidy_1.png" style="display:none;">
+    </div>
+
+    <h2>Debugger</h2>
+    <p>
+      Integrates <a href="https://github.com/kevinb7/debugger">kevinb7/debugger</a>
+      into the live-editor.  It implements two interfaces: basic and advanced.
+    </p>
+    <p>
+      The basic interface does not require the user to set a breakpoint.  The
+      user begins debugging by clicking on the "Begin" button.  This will restart
+      the programming and automatically break on the first line.  The user can
+      advance the program by clicking "Step" which will step into each function
+      call.  The "End" will run to the end of the program if no breakpoints have
+      been set.  This mode does not prevent the setting of breakpoints.  Whether
+      "End" should ignore all breakpoints or setting breakpoints should be disabled
+      in this mode is an open question.
+    </p>
+    <p>
+      The advanced mode behaves more like a traditional debugger where the user
+      must set breakpoints.  It supports stepping in, out, and over method calls.
+    </p>
+    <p>
+      <a href="debugger/index.html?debugger=true">demo</a>
+    </p>
+    <p>
+      <span style="font-style:italic;color:#999;">Hover over to see more screenshots.</span>
+    </p>
+    <div id="debugger_container">
+      <img id="debugger_0" src="images/debugger_0.png" style="display:block;">
+      <img id="debugger_1" src="images/debugger_1.png" style="display:none;">
+      <img id="debugger_2" src="images/debugger_2.png" style="display:none;">
+    </div>
+  </div>
+
 </div>
 
-<div id="pretty_print">
-  <h2>Pretty Print</h2>
-  <p>
-    Reformat code to enforce proper indentation.
-  </p>
-  <p>
-    <a href="pretty_print/index.html">Live Demo</a>
-    <a href="pretty_print_more_info.html">More Info</a>
-  </p>
-</div>
+
+
+
 
 </body>
 </html>
+<script src="index.js"></script>

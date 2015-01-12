@@ -21,7 +21,7 @@
     </style>
 </head>
 <body>
-    <h1>Live Editor Example</h1>
+    <h1>Live Editor Example: Debugger</h1>
     <div id="sample-live-editor"></div>
 
     <script src="build/js/live-editor.core_deps.js"></script>
@@ -40,10 +40,25 @@
         outputUrl += "?debugger=true";
         useDebugger = true;
     }
+    
+    var code = "var randomColor = function () {\n" +
+    "var r = random(255);\n" +
+    "var g = random(255);\n" +
+    "var b = random(255);\n" +
+    "return color(r, g, b);\n" +
+    "};\n" +
+    "var space = 27;\n" +
+    "var start = 30;\n" +
+    "for (var i = 0; i < 10; i++) {\n" +
+    "    fill(randomColor());\n" +
+    "    var x = start + i * space;\n" +
+    "    var y = start + i * space;\n" +
+    "    rect(x, y, 100, 100);\n" +
+    "}\n";
 
     window.liveEditor = new LiveEditor({
         el: $("#sample-live-editor"),
-        code: window.localStorage["test-code"] || "rect(10, 10, 100, 100);",
+        code: window.localStorage["test-code"] || code,
         width: 400,
         height: 400,
         editorHeight: "80%",
