@@ -1475,6 +1475,7 @@ window.PJSOutput = Backbone.View.extend({
         this.canvas.createIcosahedron = geom.createIcosahedron;
 
         this.canvas.Mesh = geom.Mesh;
+        this.canvas.Mesh.override = true;   // turn the override on by default
         this.canvas.Edge = geom.Edge;
         this.canvas.Face = geom.Face;
         this.canvas.Vector3 = geom.Vector3;
