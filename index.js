@@ -26,6 +26,5 @@ function createSlideShow(prefix, containerSelector, delay) {
     }, delay);
 }
 
-createSlideShow("API_", "#API_container", 1000);
 createSlideShow("tidy_", "#tidy_container", 1000);
 createSlideShow("debugger_", "#debugger_container", 1000);
