@@ -19,7 +19,7 @@ var request = require("request");
 var paths = require("./build-paths.json");
 
 // place the build files in live-editor-server so that they get deployed
-var buildDir = "external/live-editor-server/build/";
+var buildDir = "external/live-editor-server/live-editor/build/";
 
 var updatePaths = function(paths) {
     return paths.map(function (path) {
