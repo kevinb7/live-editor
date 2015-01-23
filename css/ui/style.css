@@ -34,7 +34,7 @@
 
 .scratchpad-toolbar {
     margin-bottom: 10px;
-    min-height: 30px;
+    /*min-height: 30px;*/
 }
 
 .scratchpad-wrap .scratchpad-toolbar .simple-button.pull-left {
@@ -42,7 +42,17 @@
     margin-right: 5px;
 }
 
-.scratchpad-wrap .scratchpad-toolbar .simple-button.pull-left {
+.scratchpad-wrap .scratchpad-toolbar .simple-button.pull-right {
+    float: right;
+    margin-left: 5px;
+}
+
+.simple-button.pull-left {
+    float: left;
+    margin-right: 5px;
+}
+
+.simple-button.pull-right {
     float: right;
     margin-left: 5px;
 }

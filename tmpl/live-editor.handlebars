@@ -1,8 +1,15 @@
 <div class="scratchpad-toolbar">
-    <button id="restart-code"
-            class="simple-button pull-right">
+    <button id="save-program" class="simple-button pull-left">
+        {{#_}}Save{{/_}}
+    </button>
+    <span>&nbsp;</span>
+    <button id="restart-code" class="simple-button pull-right">
         <span class="icon-refresh"></span>
-        {{#_}}Restart{{/_}}</button>
+        {{#_}}Restart{{/_}}
+    </button>
+    <button id="capture-screenshot" class="simple-button pull-right">
+        {{#_}}Screenshot{{/_}}
+    </button>
 
     <!-- Widgets for selecting colors to doodle on the canvas during
         recordings -->

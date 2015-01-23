@@ -17,7 +17,10 @@ window.LiveEditor = Backbone.View.extend({
         PLAYBAR_UI: ".scratchpad-playbar-play, .scratchpad-playbar-progress",
         OUTPUT_FRAME: "#output-frame",
         OUTPUT_DIV: "#output",
-        ALL_OUTPUT: "#output, #output-frame"
+        ALL_OUTPUT: "#output, #output-frame",
+        RESTART_BUTTON: "#restart-code",
+        SCREENSHOT_BUTTON: "#capture-screenshot",
+        SAVE_BUTTON: "#save-program"
     },
 
     mouseCommands: ["move", "over", "out", "down", "up"],
@@ -111,6 +114,7 @@ window.LiveEditor = Backbone.View.extend({
         this.transloaditAuthKey = options.transloaditAuthKey;
 
         this.outputState = "dirty";
+        this.editorState = "clean";
 
         this.render();
 
@@ -230,8 +234,23 @@ window.LiveEditor = Backbone.View.extend({
         });
 
         // Handle the restart button
-        $el.delegate("#restart-code", "click",
+        $el.delegate(self.dom.RESTART_BUTTON, "click",
             this.restartCode.bind(this));
+        
+        $el.delegate(self.dom.SCREENSHOT_BUTTON, "click", 
+            this.getScreenshot.bind(this));
+        
+        $el.delegate(self.dom.SAVE_BUTTON, "click", 
+            this.saveProgram.bind(this));
+
+        $(window).on("beforeunload", function (e) {
+            if (self.editorState === "dirty") {
+                var message = "You've edited your program.  Your changes will be lost if you don't save them";
+
+                (e || window.event).returnValue = message; //Gecko + IE
+                return message; //Gecko + Webkit, Safari, Chrome etc.
+            }
+        });
 
         this.handleMessagesBound = this.handleMessages.bind(this);
         $(window).on("message", this.handleMessagesBound);
@@ -249,6 +268,7 @@ window.LiveEditor = Backbone.View.extend({
             // They're typing. Hide the tipbar to give them a chance to fix things up
             this.tipbar.hide();
             this.markDirty();
+            this.editorState = "dirty";
         }.bind(this));
 
         this.config.on("versionSwitched", function(e, version) {
@@ -1122,18 +1142,18 @@ window.LiveEditor = Backbone.View.extend({
         }
     },
 
-    getScreenshot: function(callback) {
+    getScreenshot: function() {
         // Unbind any handlers this function may have set for previous
         // screenshots
-        $(window).unbind("message.getScreenshot");
-
-        // We're only expecting one screenshot back
-        $(window).bind("message.getScreenshot", function(e) {
-            // Only call if the data is actually an image!
-            if (/^data:/.test(e.originalEvent.data)) {
-                callback(e.originalEvent.data);
-            }
-        });
+        //$(window).unbind("message.getScreenshot");
+        //
+        //// We're only expecting one screenshot back
+        //$(window).bind("message.getScreenshot", function(e) {
+        //    // Only call if the data is actually an image!
+        //    if (/^data:/.test(e.originalEvent.data)) {
+        //        callback(e.originalEvent.data);
+        //    }
+        //});
 
         // Ask the frame for a screenshot
         var request = { screenshot: true, pid: this.pid };
@@ -1160,6 +1180,25 @@ window.LiveEditor = Backbone.View.extend({
             width: width,
             height: height
         });
+    },
+    
+    saveProgram: function() {
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "/save", true);
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        xhr.onload = function () {
+            // TODO: display a dialog to the user with this info
+            if (xhr.status === 200) {
+                console.log("we're good to go");
+                this.editorState = "clean"
+            } else {
+                console.log("something went wrong");
+            }
+        }.bind(this);
+
+        var code = this.editor.text();
+        var obj = { code: code, pid: this.pid };
+        xhr.send(JSON.stringify(obj));
     },
 
     // don't need this duplicate
