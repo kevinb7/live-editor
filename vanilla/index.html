@@ -1,0 +1,73 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Live Editor Simple Demo</title>
+    <link rel="stylesheet" href="build/css/live-editor.core_deps.css"/>
+    <link rel="stylesheet" href="build/css/live-editor.audio.css"/>
+    <link rel="stylesheet" href="build/css/live-editor.tooltips.css"/>
+    <link rel="stylesheet" href="build/css/live-editor.ui.css"/>
+    <!--<link rel="stylesheet" href="../../build/css/live-editor.debugger.css"/>-->
+    <style>
+        body {
+            padding: 20px;
+        }
+
+        h1 {
+            padding: 0;
+            margin: 0 0 20px 0;
+        }
+        #sample-live-editor {
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Live Editor Example</h1>
+    <div id="sample-live-editor"></div>
+
+    <script src="build/js/live-editor.core_deps.js"></script>
+    <script src="build/js/live-editor.editor_ace_deps.js"></script>
+    <script src="build/js/live-editor.audio.js"></script>
+    <script src="build/js/live-editor.shared.js"></script>
+    <script src="build/js/live-editor.tooltips.js"></script>
+    <script src="build/js/live-editor.ui.js"></script>
+    <script src="build/js/live-editor.editor_ace.js"></script>
+    <!--<script src="build/js/live-editor.debugger.js"></script>-->
+
+    <script>
+    var outputUrl = "output.html";
+    var useDebugger = false;
+    if (location.search.indexOf("debugger=true") !== -1) {
+        outputUrl += "?debugger=true";
+        useDebugger = true;
+    }
+
+    var code =  'background(186, 2, 149);\n\nvar randomColor = function () {\n  var r = random(255);\n  var g = random(255);\n  var b = random(255);\n  return color(r, g, b);\n};\n' +
+            '\nvar img = getImage("avatars/leafers-seed");\nvar img2 = getImage("avatars/piceratops-seed");\n// var snd = getSound("rpg/metal-clink");\n// playSound(snd);\n' +
+            '\nvar space = 3.0;\nvar start = 0;\nfor (var i = 0; i < 146; i++) {\n' +
+            '  fill(randomColor());\n  var x = start + i * space;\n  var y = start + i * space;\n  rect(x, y, 100, 100);\n}\n' +
+            '\nimage(img, 185.8, 0);\nimage(img2, 279, 0);\n' +
+            '\nnoStroke();\nfill(0, 0, 0);\ntextFont("courier");\ntextSize(50);\ntext("hello", 21,372);';
+
+    window.liveEditor = new LiveEditor({
+        el: $("#sample-live-editor"),
+        code: code,
+        width: 400,
+        height: 400,
+        editorHeight: "80%",
+        autoFocus: true,
+        workersDir: "build/workers/",
+        externalsDir: "build/external/",
+        imagesDir: "../shared/images/",
+        soundsDir: "../shared/sounds/",
+        execFile: outputUrl,
+        jshintFile: "build/external/jshint/jshint.js",
+        useDebugger: useDebugger
+    });
+    liveEditor.editor.on("change", function() {
+        window.localStorage["test-code"] = liveEditor.editor.text();
+    });
+    ScratchpadAutosuggest.init(liveEditor.editor.editor);
+    </script>
+</body>
+</html>

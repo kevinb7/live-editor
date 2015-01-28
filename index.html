@@ -53,9 +53,17 @@
       structure of the code is not changing, just the values.  Profiling on my
       machine (2012 MacBook Air: Core i5 @ 1.7 GHz) I saw an improvement from
       ~15 fps to ~35 fps (on average).  Scrubbing feels much more fluid.
+      There is still an initial lint that's done to get a list of globals.
     </p>
     <p>
-      <a href="optimized/index.html">demo</a>
+      This can be avoided by store the list of globals on the server and 
+      embedding it in the page when serving output.html.
+    </p>
+    <p>
+      Optimized: <a href="optimized/index.html">demo</a> <a href="optimized/index.html?noLint=false">demo (always lint)</a>
+    </p>
+    <p>
+      Unoptimized: <a href="vanilla/index.html">demo</a>
     </p>
 
     <h2>3D API</h2>
