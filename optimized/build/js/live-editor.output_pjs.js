@@ -1363,6 +1363,11 @@ window.PJSOutput = Backbone.View.extend({
                 function(hintCode, callback) {
                     // Fallback in case of no worker support
                     if (!window.Worker) {
+                        if (!JSHINT) {
+                            eval(data["jshint.js"]);
+                            window.JSHINT = JSHINT;
+                        }
+
                         JSHINT(hintCode);
                         callback(JSHINT.data(), JSHINT.errors);
                         return;
@@ -2689,9 +2694,7 @@ window.PJSOutput = Backbone.View.extend({
                 this.times.push(performance.now());
             }
             if (!this.firstRun) {
-                if (window.performance) {
-                    console.log("finished running: " + performance.now());
-                }
+                console.log("finished running: " + performance.now());
                 this.firstRun = true;
             }
         } catch (e) {

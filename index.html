@@ -56,10 +56,12 @@
         <li>
           <b>Reduced the amount of JavaScript being used:</b>
           <br><br>
-          core_deps and output_pjs_deps were reduced in size by approximately
-          50%.  Individual jquery-ui modules were included instead of the whole
-          thing.  dialog-polyfill replaced jquery.ui.modal.  On the output side
-          of things p5.js replaced processing-js.
+          core_deps was reduced in size to approximately 50% of the original.  
+          Individual jquery-ui modules were included instead of the whole thing.  
+          dialog-polyfill replaced jquery.ui.modal.  output_pjs_deps was reduced
+          in size to approximately 30% of the original.  This was accomplished
+          by replacing processing-js with p5.js and loading JSHINT from deps.json
+          (only if workers are unavailable).
         </li>
         <li>
           <b>Embed user code from server in output.html and run without linting or testing:</b>
@@ -76,7 +78,7 @@
       resulted in a reduction of memory use in the main heap:
       <ul>
         <li>Vanilla: 24.9 MB (main heap) – 37.3 MB (total)</li>
-        <li>Optimized: 20.7 MB (main heap) – 34.4 MB (total)</li>
+        <li>Optimized: 19.8 MB (main heap) – 33.5 MB (total)</li>
       </ul>
       It should be noted that the optimized version ends up allocating more workers
       when scrubbing because the other workers are needed more often.
