@@ -1,0 +1,44 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Live Editor Output</title>
+    <link rel="stylesheet" href="build/css/live-editor.output.css"/>
+</head>
+<body>
+    <div id="live-editor-output"></div>
+
+    <!-- TODO(kevinb7) use JSON dependency loading system for core_deps.js and shared.js -->
+    <script src="build/js/live-editor.core_deps.js?cachebust=1"></script>
+    <script src="build/js/live-editor.shared.js"></script>
+    <script src="build/js/live-editor.output_pjs_deps.js"></script>
+    <script src="build/js/live-editor.output.js"></script>
+    <script src="build/js/live-editor.output_pjs.js"></script>
+    <!--<script src="../../build/js/live-editor.output_debugger_deps.js"></script>-->
+    <script>
+    var useDebugger = false;
+    if (location.search.indexOf("debugger=true") !== -1) {
+        useDebugger = typeof ProcessingDebugger === "function";
+    }
+    
+    // this would be loaded from the server
+    var code =  'background(186, 2, 149);\n\nvar randomColor = function () {\n  var r = random(255);\n  var g = random(255);\n  var b = random(255);\n  return color(r, g, b);\n};\n' +
+                '\nvar img = getImage("avatars/leafers-seed");\nvar img2 = getImage("avatars/piceratops-seed");\n// var snd = getSound("rpg/metal-clink");\n// playSound(snd);\n' +
+                '\nvar space = 3.0;\nvar start = 0;\nfor (var i = 0; i < 146; i++) {\n' +
+                '  fill(randomColor());\n  var x = start + i * space;\n  var y = start + i * space;\n  rect(x, y, 100, 100);\n}\n' +
+                '\nimage(img, 185.8, 0);\nimage(img2, 279, 0);\n' + 
+                '\nnoStroke();\nfill(0, 0, 0);\ntextFont("courier");\ntextSize(50);\ntext("hello", 21,372);';
+
+    new LiveEditorOutput({
+        el: $("#live-editor-output")[0],
+        useDebugger: useDebugger,
+        outputType: "pjs",
+        workersDir: "build/workers/",
+        externalsDir: "build/external/",
+        imagesDir: "../shared/images/",
+        soundsDir: "../shared/sounds/",
+        jshintFile: "build/external/jshint/jshint.js",
+        code: code
+    });
+    </script>
+</body>
+</html>

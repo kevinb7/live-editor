@@ -14,6 +14,49 @@
       by Kevin Barabash<br>
       github: <a href="http://github.com/kevinb7">kevinb7</a>
     </p>
+    
+    <h2>Improving Page Load Speed and App Responsiveness</h2>
+    <p>
+      TODO: provide some metrics.<br>
+      Page load speed was improved by the following changes:
+      <ul>
+        <li>
+          <em>Packaged all web workers and their dependencies in a single JSON file:</em>
+          <br><br>
+          This reduces the number of network requests and avoids downloading 
+          shared dependencies more than once.  It also allows web workers to 
+          initialize faster because they avoid calls to importScripts which 
+          block until the script has been downloaded from the network.
+        </li>
+        <li>
+          <em>Reduced the amount of JavaScript being used:</em>
+          <br><br>
+          core_deps and output_pjs_deps were reduced in size by approximately
+          50%.  Individual jquery-ui modules were included instead of the whole
+          thing.  dialog-polyfill replaced jquery.ui.modal.  On the output side
+          of things p5.js replaced processing-js.  There's room for additional
+          savings by removing the source-maps dependency from esprima.
+        </li>
+        <li>
+          <em>Embed user code from server in output.html and run without linting or testing:</em>
+          <br><br>
+          The assumption being made is that there is a copy of the code that 
+          has been linted and tested sitting on the server.  For now, the user
+          code in the demo has been hard coded into output.html.  Because the
+          user's program is being run sooner the app looks like it's loading faster.
+        </li>
+      </ul>
+    </p>
+    <p>
+      App responsiveness was improved by not linting when the user is using the
+      number scrubber or color picker.  It's safe to make do this because the 
+      structure of the code is not changing, just the values.  Profiling on my
+      machine (2012 MacBook Air: Core i5 @ 1.7 GHz) I saw an improvement from
+      ~15 fps to ~35 fps (on average).  Scrubbing feels much more fluid.
+    </p>
+    <p>
+      <a href="optimized/index.html">demo</a>
+    </p>
 
     <h2>3D API</h2>
     <p>
