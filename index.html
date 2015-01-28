@@ -16,14 +16,21 @@
     </p>
     
     <h2>Improving Page Load Speed and App Responsiveness</h2>
+    <h3>Demos</h3>
     <p>
-      Let's start with some numbers first.  I've discarded the first load because
-      the browser is busy doing other intialization stuff.  I've also stopped 
-      reloading the page and opened a new browser after the next 3 reloads because
-      garbage accumulates and then measurements are thrown off by garbage collections.
-      The measurements below are for when the first run of the user's code completes.
-      This measurement is taken using performance.now() and works in Chrome and
-      Firefox.
+      Optimized: <a href="optimized/index.html">demo</a>
+    </p>
+    <p>
+      Unoptimized: <a href="vanilla/index.html">demo</a>
+    </p>
+    <h3>Page Speed</h3>
+    <p>
+      I've discarded the first load because the browser is busy doing other 
+      intialization stuff.  I've also stopped reloading the page and opened a 
+      new browser after the next 3 reloads because garbage accumulates and then 
+      measurements are thrown off by garbage collections. The measurements below 
+      are for when the first run of the user's code completes. This measurement 
+      is taken using performance.now() and works in Chrome and Firefox.
       <ul>
         <li>
           <b>Uncached</b><br>
@@ -83,6 +90,7 @@
       It should be noted that the optimized version ends up allocating more workers
       when scrubbing because the other workers are needed more often.
     </p>
+    <h3>Responsiveness</h3>
     <p>
       To improve app responsiveness linting was skipped when the user is using the
       number scrubber or color picker.  It's safe to make do this because the 
@@ -95,12 +103,6 @@
       There is still an initial lint that's done to get a list of globals.
       This can be avoided by store the list of globals on the server and 
       embedding it in the page when serving output.html.
-    </p>
-    <p>
-      Optimized: <a href="optimized/index.html">demo</a> <a href="optimized/index.html?noLint=false">demo (always lint)</a>
-    </p>
-    <p>
-      Unoptimized: <a href="vanilla/index.html">demo</a>
     </p>
 
     <h2>3D API</h2>
