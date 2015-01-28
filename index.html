@@ -17,11 +17,36 @@
     
     <h2>Improving Page Load Speed and App Responsiveness</h2>
     <p>
-      TODO: provide some metrics.<br>
-      Page load speed was improved by the following changes:
+      Let's start with some numbers first.  I've discarded the first load because
+      the browser is busy doing other intialization stuff.  I've also stopped 
+      reloading the page and opened a new browser after the next 3 reloads because
+      garbage accumulates and then measurements are thrown off by garbage collections.
+      The measurements below are for when the first run of the user's code completes.
+      This measurement is taken using performance.now() and works in Chrome and
+      Firefox.
       <ul>
         <li>
-          <em>Packaged all web workers and their dependencies in a single JSON file:</em>
+          <b>Uncached</b><br>
+          vanilla - 1500~2500ms<br>
+          optimized - 1000ms~1300ms
+        </li>
+        <li>
+          <b>Cached</b><br>
+          vanilla - 1200~1500ms<br>
+          optimized - 900ms~1100ms
+        </li>
+      </ul>
+      <p>
+        The optimized version performs significantly better in than the vanilla
+        implementation in the uncached situation.  In the cached situation it's
+        still a little bit better but not by a huge margin.
+      </p>
+      <p>
+        To improve page load speed the following change were made:
+      </p>
+      <ul>
+        <li>
+          <b>Packaged all web workers and their dependencies in a single JSON file:</b>
           <br><br>
           This reduces the number of network requests and avoids downloading 
           shared dependencies more than once.  It also allows web workers to 
@@ -29,7 +54,7 @@
           block until the script has been downloaded from the network.
         </li>
         <li>
-          <em>Reduced the amount of JavaScript being used:</em>
+          <b>Reduced the amount of JavaScript being used:</b>
           <br><br>
           core_deps and output_pjs_deps were reduced in size by approximately
           50%.  Individual jquery-ui modules were included instead of the whole
@@ -38,7 +63,7 @@
           savings by removing the source-maps dependency from esprima.
         </li>
         <li>
-          <em>Embed user code from server in output.html and run without linting or testing:</em>
+          <b>Embed user code from server in output.html and run without linting or testing:</b>
           <br><br>
           The assumption being made is that there is a copy of the code that 
           has been linted and tested sitting on the server.  For now, the user
@@ -48,14 +73,25 @@
       </ul>
     </p>
     <p>
-      App responsiveness was improved by not linting when the user is using the
+      Reduction in the amount of code that was being sent to the browser also 
+      resulted in a reduction of memory use in the main heap:
+      <ul>
+        <li>Vanilla: 24.9 MB (main heap) – 37.3 MB (total)</li>
+        <li>Optimized: 20.7 MB (main heap) – 34.4 MB (total)</li>
+      </ul>
+      It should be noted that the optimized version ends up allocating more workers
+      when scrubbing because the other workers are needed more often.
+    </p>
+    <p>
+      To improve app responsiveness linting was skipped when the user is using the
       number scrubber or color picker.  It's safe to make do this because the 
-      structure of the code is not changing, just the values.  Profiling on my
+      structure of the code is not changing, just the values.
+    </p>
+    <p>
+      Profiling on my
       machine (2012 MacBook Air: Core i5 @ 1.7 GHz) I saw an improvement from
       ~15 fps to ~35 fps (on average).  Scrubbing feels much more fluid.
       There is still an initial lint that's done to get a list of globals.
-    </p>
-    <p>
       This can be avoided by store the list of globals on the server and 
       embedding it in the page when serving output.html.
     </p>

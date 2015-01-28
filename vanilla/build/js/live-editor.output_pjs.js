@@ -2566,7 +2566,9 @@ window.PJSOutput = Backbone.View.extend({
             }
 
             if (!this.firstRun) {
-                console.log("finished running: " + performance.now());
+                if (window.performance) {
+                    console.log("finished running: " + performance.now());
+                }
                 this.firstRun = true;
             }
         } catch (e) {
