@@ -219,7 +219,9 @@ window.LiveEditor = Backbone.View.extend({
         this.$el.html(Handlebars.templates["live-editor"]({
 //            execFile: this.execFile,
             imagesDir: this.imagesDir,
-            colors: this.colors
+            colors: this.colors,
+            allowSave: allowSave,
+            allowScreenshot: allowScreenshot
         }));
     },
 
@@ -1206,6 +1208,18 @@ window.LiveEditor = Backbone.View.extend({
                 this.editorState = "clean"
             } else {
                 console.log("something went wrong");
+            }
+
+            var saveDialog = document.getElementById("saveDialog");
+            if (saveDialog) {
+                var msg;
+                if (xhr.status === 200) {
+                    msg = "Sketch was successfully saved";
+                } else {
+                    msg = "Unable to save sketch";
+                }
+                saveDialog.querySelector("div.message").innerText = msg;
+                saveDialog.showModal();
             }
         }.bind(this);
 

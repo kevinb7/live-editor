@@ -1,7 +1,9 @@
 <div class="scratchpad-toolbar">
+    {{#if allowSave}}
     <button id="save-program" class="simple-button pull-left">
         {{#_}}Save{{/_}}
     </button>
+    {{/if}}
     <span>&nbsp;</span>
     <button id="open-output-window" class="simple-button pull-right">
         {{#_}}Open Output Window{{/_}}
@@ -10,9 +12,11 @@
         <span class="icon-refresh"></span>
         {{#_}}Restart{{/_}}
     </button>
+    {{#if allowScreenshot}}
     <button id="capture-screenshot" class="simple-button pull-right">
         {{#_}}Screenshot{{/_}}
     </button>
+    {{/if}}
 
     <!-- Widgets for selecting colors to doodle on the canvas during
         recordings -->
