@@ -20,6 +20,7 @@ window.LiveEditor = Backbone.View.extend({
         ALL_OUTPUT: "#output, #output-frame",
         RESTART_BUTTON: "#restart-code",
         SCREENSHOT_BUTTON: "#capture-screenshot",
+        OUTPUT_WINDOW_BUTTON: "#open-output-window",
         SAVE_BUTTON: "#save-program"
     },
 
@@ -239,6 +240,9 @@ window.LiveEditor = Backbone.View.extend({
         
         $el.delegate(self.dom.SCREENSHOT_BUTTON, "click", 
             this.getScreenshot.bind(this));
+        
+        $el.delegate(self.dom.OUTPUT_WINDOW_BUTTON, "click",
+            this.openOutputWindow.bind(this));
         
         $el.delegate(self.dom.SAVE_BUTTON, "click", 
             this.saveProgram.bind(this));
@@ -1164,6 +1168,15 @@ window.LiveEditor = Backbone.View.extend({
         } else {
             this.postFrame(request);
         }
+    },
+
+    openOutputWindow: function() {
+        var left = screen.width - 600;
+        var strWindowFeatures = "height=600,width=600,top=0,left=" + left;
+        // TODO: provide a way to hide the logout link on output.html
+        var URL = "/output";
+        var win = window.open(URL, "_blank", strWindowFeatures);
+        // TODO: close the window if we logout or close the main window
     },
 
     updateCanvasSize: function(width, height) {
